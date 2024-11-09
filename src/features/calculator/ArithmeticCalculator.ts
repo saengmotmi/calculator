@@ -31,7 +31,7 @@ export class ArithmeticCalculator {
     this.inputHistory.pop();
   }
 
-  calculate() {
+  evaluate() {
     const expression = this.inputHistory.join(" ");
     const calculator = ArithmeticCalculatorFactory.create(expression.trim());
     const result = calculator.evaluate();

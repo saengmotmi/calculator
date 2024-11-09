@@ -1,9 +1,14 @@
 import { Evaluator } from "../operations/evaluator";
 import { Notation } from "./notation";
+import { StackManager } from "./stack";
 import { PAREN } from "./token";
 
 export class Infix implements Notation {
-  constructor(private expression: string, private evaluator: Evaluator) {}
+  private stackManager: StackManager;
+
+  constructor(private expression: string, private evaluator: Evaluator) {
+    this.stackManager = new StackManager(this.evaluator);
+  }
 
   evaluate() {
     const values: number[] = [];
@@ -11,42 +16,20 @@ export class Infix implements Notation {
     const tokens = this.evaluator.tokenizeExpression(this.expression);
 
     tokens.forEach((token) => {
-      if (!isNaN(Number(token))) {
+      if (this.isNumber(token)) {
         values.push(Number(token));
-      } else if (token === PAREN.LEFT) {
+      } else if (this.isLeftParenthesis(token)) {
         operators.push(token);
-      } else if (token === PAREN.RIGHT) {
-        while (
-          operators.length &&
-          operators[operators.length - 1] !== PAREN.LEFT
-        ) {
-          this.applyOperator(values, operators.pop()!);
-        }
-        operators.pop();
+      } else if (this.isRightParenthesis(token)) {
+        this.stackManager.processUntilLeftParenthesis(values, operators);
       } else {
-        while (
-          operators.length &&
-          this.evaluator.precedence[operators[operators.length - 1]] >=
-            this.evaluator.precedence[token]
-        ) {
-          this.applyOperator(values, operators.pop()!);
-        }
-        operators.push(token);
+        this.stackManager.processOperator(token, values, operators);
       }
     });
 
-    while (operators.length) {
-      this.applyOperator(values, operators.pop()!);
-    }
+    this.stackManager.moveAllOperators(values, operators);
 
     return values.pop()!;
-  }
-
-  private applyOperator(values: number[], operator: string) {
-    const b = values.pop()!;
-    const a = values.pop()!;
-    const result = this.evaluator.applyOperation(a, b, operator);
-    values.push(result);
   }
 
   toInfix() {
@@ -59,53 +42,54 @@ export class Infix implements Notation {
     const tokens = this.evaluator.tokenizeExpression(this.expression);
 
     tokens.forEach((token) => {
-      if (!isNaN(Number(token))) {
+      if (this.isNumber(token)) {
         output.push(token);
-      } else if (token === PAREN.LEFT) {
+      } else if (this.isLeftParenthesis(token)) {
         operators.push(token);
-      } else if (token === PAREN.RIGHT) {
-        while (
-          operators.length &&
-          operators[operators.length - 1] !== PAREN.LEFT
-        ) {
-          output.push(operators.pop()!);
-        }
-        operators.pop();
+      } else if (this.isRightParenthesis(token)) {
+        this.stackManager.moveUntilLeftParenthesis(output, operators);
       } else {
-        while (
-          operators.length &&
-          this.evaluator.precedence[operators[operators.length - 1]] >=
-            this.evaluator.precedence[token]
-        ) {
-          output.push(operators.pop()!);
-        }
-        operators.push(token);
+        this.stackManager.pushOperatorsWithHigherPrecedence(
+          token,
+          output,
+          operators
+        );
       }
     });
 
-    while (operators.length) {
-      output.push(operators.pop()!);
-    }
-
-    return output;
+    return output.concat(operators.toReversed());
   }
 
   toPrefix() {
-    const reversedExpr = this.expression
+    const reversedExpr = this.reverseExpression(this.expression);
+    const postfix = new Infix(reversedExpr, this.evaluator).toPostfix();
+    return postfix.toReversed();
+  }
+
+  private isNumber(token: string): boolean {
+    return !isNaN(Number(token));
+  }
+
+  private isLeftParenthesis(token: string): boolean {
+    return token === PAREN.LEFT;
+  }
+
+  private isRightParenthesis(token: string): boolean {
+    return token === PAREN.RIGHT;
+  }
+
+  private reverseExpression(expression: string): string {
+    return expression
       .split("")
-      .reverse()
+      .toReversed()
       .map((char) => {
-        if (char === PAREN.LEFT) {
+        if (this.isLeftParenthesis(char)) {
           return PAREN.RIGHT;
-        } else if (char === PAREN.RIGHT) {
+        } else if (this.isRightParenthesis(char)) {
           return PAREN.LEFT;
-        } else {
-          return char;
         }
+        return char;
       })
       .join("");
-
-    const postfix = new Infix(reversedExpr, this.evaluator).toPostfix();
-    return postfix.reverse();
   }
 }

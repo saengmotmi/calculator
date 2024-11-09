@@ -1,0 +1,15 @@
+{
+  "name": "calculator",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/saengmotmi/calculator.git",
+  "author": "saengmotmi <ohjtack@gmail.com>",
+  "license": "MIT",
+  "packageManager": "yarn@4.5.1",
+  "dependencies": {
+    "tsx": "^4.19.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}

@@ -6,6 +6,7 @@ interface DisplayProps {
 const Display = ({ expression, result }: DisplayProps) => {
   return (
     <div
+      role="display"
       style={{
         marginBottom: "20px",
         padding: "10px",

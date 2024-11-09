@@ -1,15 +1,15 @@
 import { useSyncExternalStore } from "react";
 
-import { calculatorStore } from "./calculatorStore";
 import {
   BackspaceButton,
-  Button,
   ClearButton,
   EqualsButton,
   NumberButton,
   OperatorButton,
-} from "./buttons";
+} from "./Button/types";
+import { calculatorStore } from "./calculatorStore";
 import Display from "./Display";
+import { Button } from "./Button";
 
 const CalculatorPanel = () => {
   const { expression, result } = useSyncExternalStore(

@@ -31,7 +31,7 @@ export class Postfix implements Notation {
 export class PostfixManager {
   constructor(private evaluator: Evaluator) {}
 
-  evaluate(tokens: string[]): number {
+  evaluate(tokens: string[]) {
     const values: number[] = [];
     tokens.forEach((token) => {
       if (!isNaN(Number(token))) {
@@ -45,7 +45,7 @@ export class PostfixManager {
     return values.pop()!;
   }
 
-  toInfix(tokens: string[]): string[] {
+  toInfix(tokens: string[]) {
     const stack: string[] = [];
     tokens.forEach((token) => {
       if (!isNaN(Number(token))) {
@@ -59,7 +59,7 @@ export class PostfixManager {
     return stack[0].split(" ");
   }
 
-  toPrefix(tokens: string[]): string[] {
+  toPrefix(tokens: string[]) {
     const stack: string[] = [];
     tokens.forEach((token) => {
       if (!isNaN(Number(token))) {

@@ -31,7 +31,7 @@ export class Prefix implements Notation {
 export class PrefixManager {
   constructor(private evaluator: Evaluator) {}
 
-  evaluate(tokens: string[]): number {
+  evaluate(tokens: string[]) {
     const values: number[] = [];
     tokens.reverse().forEach((token) => {
       if (!isNaN(Number(token))) {
@@ -45,7 +45,7 @@ export class PrefixManager {
     return values.pop()!;
   }
 
-  toInfix(tokens: string[]): string[] {
+  toInfix(tokens: string[]) {
     const stack: string[] = [];
     tokens.reverse().forEach((token) => {
       if (!isNaN(Number(token))) {
@@ -59,7 +59,7 @@ export class PrefixManager {
     return stack[0].split(" ");
   }
 
-  toPostfix(tokens: string[]): string[] {
+  toPostfix(tokens: string[]) {
     const stack: string[] = [];
     tokens.reverse().forEach((token) => {
       if (!isNaN(Number(token))) {

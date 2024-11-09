@@ -1,4 +1,4 @@
-import { Evaluator } from "../operations/evaluator";
+import { Evaluator } from "../evaluators/evaluator";
 import { Notation } from "./notation";
 import { PAREN } from "./token";
 

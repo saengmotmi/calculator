@@ -6,7 +6,7 @@ import { PAREN } from "../../entities/notations/token";
 import {
   ArithmeticEvaluator,
   OPERATORS,
-} from "../../entities/operations/arithmetics";
+} from "../../entities/evaluators/arithmetics";
 
 export class ArithmeticCalculator {
   private inputHistory: string[] = [];

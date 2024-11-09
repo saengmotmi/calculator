@@ -4,3 +4,5 @@ export interface Notation {
   toPrefix: () => string[];
   evaluate: () => number;
 }
+
+export type NotationType = "infix" | "prefix" | "postfix";

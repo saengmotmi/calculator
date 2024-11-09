@@ -1,9 +1,12 @@
-// ArithmeticCalculator.ts
 import { Infix } from "../../entities/notations/infix";
-import { Notation } from "../../entities/notations/notation";
+import { Notation, NotationType } from "../../entities/notations/notation";
 import { Postfix } from "../../entities/notations/postfix";
 import { Prefix } from "../../entities/notations/prefix";
-import { ArithmeticEvaluator } from "../../entities/operations/arithmetics";
+import { PAREN } from "../../entities/notations/token";
+import {
+  ArithmeticEvaluator,
+  OPERATORS,
+} from "../../entities/operations/arithmetics";
 
 export class ArithmeticCalculator {
   private inputHistory: string[] = [];
@@ -12,11 +15,11 @@ export class ArithmeticCalculator {
     this.inputHistory.push(`${number}`);
   }
 
-  inputOperator(operator: string) {
+  inputOperator(operator: OPERATORS) {
     this.inputHistory.push(`${operator}`);
   }
 
-  inputParenthesis(paren: "(" | ")") {
+  inputParenthesis(paren: PAREN) {
     this.inputHistory.push(paren);
   }
 
@@ -42,10 +45,7 @@ export class ArithmeticCalculator {
 }
 
 class ArithmeticCalculatorFactory {
-  static create(
-    expression: string,
-    type: "infix" | "prefix" | "postfix" = "infix"
-  ): Notation {
+  static create(expression: string, type: NotationType = "infix"): Notation {
     const evaluator = new ArithmeticEvaluator();
 
     switch (type) {

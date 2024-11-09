@@ -1,5 +1,6 @@
-import { PAREN } from "../notations/token";
 import { Evaluator } from "./evaluator";
+
+export type OPERATORS = (typeof OPERATORS)[keyof typeof OPERATORS];
 
 const OPERATORS = {
   PLUS: "+",
@@ -35,38 +36,11 @@ export class ArithmeticEvaluator implements Evaluator {
   }
 
   tokenizeExpression(expression: string) {
-    const tokens: string[] = [];
-    let currentNumber = "";
+    const isArithmeticTokenRegex = /(\d+|\+|\-|\*|\/|\(|\))/;
 
-    for (const char of expression) {
-      if (/\d/.test(char) || char === ".") {
-        currentNumber += char;
-      } else if (
-        [
-          OPERATORS.PLUS,
-          OPERATORS.MINUS,
-          OPERATORS.MULTIPLY,
-          OPERATORS.DIVIDE,
-          PAREN.LEFT,
-          PAREN.RIGHT,
-        ].includes(char)
-      ) {
-        if (currentNumber) {
-          tokens.push(currentNumber);
-          currentNumber = "";
-        }
-        tokens.push(char);
-      } else if (/\s/.test(char)) {
-        continue;
-      } else {
-        throw new Error(`Invalid character in expression: ${char}`);
-      }
-    }
-
-    if (currentNumber) {
-      tokens.push(currentNumber);
-    }
-
-    return tokens;
+    return expression
+      .split(isArithmeticTokenRegex)
+      .map((token) => token.trim())
+      .filter((token) => token.length > 0);
   }
 }

@@ -1,5 +1,6 @@
 import { Evaluator } from "../operations/evaluator";
 import { Notation } from "./notation";
+import { PAREN } from "./token";
 
 export class Infix implements Notation {
   constructor(private expression: string, private evaluator: Evaluator) {}
@@ -12,10 +13,13 @@ export class Infix implements Notation {
     tokens.forEach((token) => {
       if (!isNaN(Number(token))) {
         values.push(Number(token));
-      } else if (token === "(") {
+      } else if (token === PAREN.LEFT) {
         operators.push(token);
-      } else if (token === ")") {
-        while (operators.length && operators[operators.length - 1] !== "(") {
+      } else if (token === PAREN.RIGHT) {
+        while (
+          operators.length &&
+          operators[operators.length - 1] !== PAREN.LEFT
+        ) {
           this.applyOperator(values, operators.pop()!);
         }
         operators.pop();
@@ -57,10 +61,13 @@ export class Infix implements Notation {
     tokens.forEach((token) => {
       if (!isNaN(Number(token))) {
         output.push(token);
-      } else if (token === "(") {
+      } else if (token === PAREN.LEFT) {
         operators.push(token);
-      } else if (token === ")") {
-        while (operators.length && operators[operators.length - 1] !== "(") {
+      } else if (token === PAREN.RIGHT) {
+        while (
+          operators.length &&
+          operators[operators.length - 1] !== PAREN.LEFT
+        ) {
           output.push(operators.pop()!);
         }
         operators.pop();
@@ -88,9 +95,13 @@ export class Infix implements Notation {
       .split("")
       .reverse()
       .map((char) => {
-        if (char === "(") return ")";
-        else if (char === ")") return "(";
-        else return char;
+        if (char === PAREN.LEFT) {
+          return PAREN.RIGHT;
+        } else if (char === PAREN.RIGHT) {
+          return PAREN.LEFT;
+        } else {
+          return char;
+        }
       })
       .join("");
 

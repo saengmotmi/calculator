@@ -1,22 +1,32 @@
+import { PAREN } from "../notations/token";
 import { Evaluator } from "./evaluator";
 
+const OPERATORS = {
+  PLUS: "+",
+  MINUS: "-",
+  MULTIPLY: "*",
+  DIVIDE: "/",
+} as const;
+
+const PRECEDENCE: { [operator: string]: number } = {
+  [OPERATORS.PLUS]: 1,
+  [OPERATORS.MINUS]: 1,
+  [OPERATORS.MULTIPLY]: 2,
+  [OPERATORS.DIVIDE]: 2,
+};
+
 export class ArithmeticEvaluator implements Evaluator {
-  precedence = {
-    "+": 1,
-    "-": 1,
-    "*": 2,
-    "/": 2,
-  };
+  precedence = PRECEDENCE;
 
   applyOperation(a: number, b: number, operator: string) {
     switch (operator) {
-      case "+":
+      case OPERATORS.PLUS:
         return a + b;
-      case "-":
+      case OPERATORS.MINUS:
         return a - b;
-      case "*":
+      case OPERATORS.MULTIPLY:
         return a * b;
-      case "/":
+      case OPERATORS.DIVIDE:
         if (b === 0) throw new Error("Division by zero");
         return a / b;
       default:
@@ -31,7 +41,16 @@ export class ArithmeticEvaluator implements Evaluator {
     for (const char of expression) {
       if (/\d/.test(char) || char === ".") {
         currentNumber += char;
-      } else if ("+-*/()".includes(char)) {
+      } else if (
+        [
+          OPERATORS.PLUS,
+          OPERATORS.MINUS,
+          OPERATORS.MULTIPLY,
+          OPERATORS.DIVIDE,
+          PAREN.LEFT,
+          PAREN.RIGHT,
+        ].includes(char)
+      ) {
         if (currentNumber) {
           tokens.push(currentNumber);
           currentNumber = "";

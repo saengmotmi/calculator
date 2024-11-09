@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 
-import { Infix } from "../notations/infix";
-import { ArithmeticEvaluator } from "../operations/arithmetics";
+import { Infix } from "../../entities/notations/infix";
+import { ArithmeticEvaluator } from "../../entities/operations/arithmetics";
 
 describe("기본 사칙연산 계산기 기능", () => {
   const evaluator = new ArithmeticEvaluator();

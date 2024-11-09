@@ -2,12 +2,37 @@ import { Evaluator } from "../operations/evaluator";
 import { Notation } from "./notation";
 
 export class Postfix implements Notation {
-  constructor(private expression: string, private evaluator: Evaluator) {}
+  private manager: PostfixManager;
+
+  constructor(private expression: string, private evaluator: Evaluator) {
+    this.manager = new PostfixManager(this.evaluator);
+  }
 
   evaluate() {
-    const values: number[] = [];
     const tokens = this.evaluator.tokenizeExpression(this.expression);
+    return this.manager.evaluate(tokens);
+  }
 
+  toInfix() {
+    const tokens = this.evaluator.tokenizeExpression(this.expression);
+    return this.manager.toInfix(tokens);
+  }
+
+  toPostfix() {
+    return this.evaluator.tokenizeExpression(this.expression);
+  }
+
+  toPrefix() {
+    const tokens = this.evaluator.tokenizeExpression(this.expression);
+    return this.manager.toPrefix(tokens);
+  }
+}
+
+export class PostfixManager {
+  constructor(private evaluator: Evaluator) {}
+
+  evaluate(tokens: string[]): number {
+    const values: number[] = [];
     tokens.forEach((token) => {
       if (!isNaN(Number(token))) {
         values.push(Number(token));
@@ -17,14 +42,11 @@ export class Postfix implements Notation {
         values.push(this.evaluator.applyOperation(a, b, token));
       }
     });
-
     return values.pop()!;
   }
 
-  toInfix() {
-    const tokens = this.evaluator.tokenizeExpression(this.expression);
+  toInfix(tokens: string[]): string[] {
     const stack: string[] = [];
-
     tokens.forEach((token) => {
       if (!isNaN(Number(token))) {
         stack.push(token);
@@ -34,18 +56,11 @@ export class Postfix implements Notation {
         stack.push(`( ${a} ${token} ${b} )`);
       }
     });
-
     return stack[0].split(" ");
   }
 
-  toPostfix() {
-    return this.evaluator.tokenizeExpression(this.expression);
-  }
-
-  toPrefix() {
-    const tokens = this.evaluator.tokenizeExpression(this.expression);
+  toPrefix(tokens: string[]): string[] {
     const stack: string[] = [];
-
     tokens.forEach((token) => {
       if (!isNaN(Number(token))) {
         stack.push(token);
@@ -55,7 +70,6 @@ export class Postfix implements Notation {
         stack.push(`${token} ${a} ${b}`);
       }
     });
-
     return stack[0].split(" ");
   }
 }

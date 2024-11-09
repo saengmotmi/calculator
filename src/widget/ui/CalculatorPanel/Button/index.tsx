@@ -1,10 +1,4 @@
-import {
-  BackspaceButton,
-  ClearButton,
-  EqualsButton,
-  NumberButton,
-  OperatorButton,
-} from "./types";
+import * as Buttons from "./types";
 
 interface ButtonProps {
   label: string;
@@ -29,30 +23,36 @@ export const Button = ({ label, onClick }: ButtonProps) => {
   );
 };
 
+export const ClearButton = () => {};
+
 export const buttonRows = [
   [
-    new NumberButton("7"),
-    new NumberButton("8"),
-    new NumberButton("9"),
-    new OperatorButton("/"),
+    new Buttons.NumberButton("7"),
+    new Buttons.NumberButton("8"),
+    new Buttons.NumberButton("9"),
+    new Buttons.OperatorButton("/"),
   ],
   [
-    new NumberButton("4"),
-    new NumberButton("5"),
-    new NumberButton("6"),
-    new OperatorButton("*"),
+    new Buttons.NumberButton("4"),
+    new Buttons.NumberButton("5"),
+    new Buttons.NumberButton("6"),
+    new Buttons.OperatorButton("*"),
   ],
   [
-    new NumberButton("1"),
-    new NumberButton("2"),
-    new NumberButton("3"),
-    new OperatorButton("-"),
+    new Buttons.NumberButton("1"),
+    new Buttons.NumberButton("2"),
+    new Buttons.NumberButton("3"),
+    new Buttons.OperatorButton("-"),
   ],
   [
-    new NumberButton("0"),
-    new OperatorButton("("),
-    new OperatorButton(")"),
-    new OperatorButton("+"),
+    new Buttons.NumberButton("0"),
+    new Buttons.OperatorButton("("),
+    new Buttons.OperatorButton(")"),
+    new Buttons.OperatorButton("+"),
   ],
-  [new ClearButton(), new BackspaceButton(), new EqualsButton()],
+  [
+    new Buttons.ClearButton(),
+    new Buttons.BackspaceButton(),
+    new Buttons.EqualsButton(),
+  ],
 ];

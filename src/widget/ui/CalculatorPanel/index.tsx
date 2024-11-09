@@ -1,12 +1,6 @@
 import { useSyncExternalStore } from "react";
 
-import {
-  BackspaceButton,
-  ClearButton,
-  EqualsButton,
-  NumberButton,
-  OperatorButton,
-} from "./Button/types";
+import { BackspaceButton, ClearButton, EqualsButton } from "./Button/types";
 import { calculatorStore } from "../../../features/calculator/calculatorStore";
 import Display from "./Display";
 import { Button, buttonRows } from "./Button";
@@ -28,39 +22,23 @@ const CalculatorPanel = () => {
         }}
       >
         {buttonRows.flat().map((button) => {
-          if (button instanceof ClearButton) {
-            return (
-              <Button
-                key={button.label}
-                label={button.label}
-                onClick={() => calculatorStore.clear()}
-              />
-            );
-          } else if (button instanceof BackspaceButton) {
-            return (
-              <Button
-                key={button.label}
-                label={button.label}
-                onClick={() => calculatorStore.backspace()}
-              />
-            );
-          } else if (button instanceof EqualsButton) {
-            return (
-              <Button
-                key={button.label}
-                label={button.label}
-                onClick={() => calculatorStore.calculate()}
-              />
-            );
-          } else {
-            return (
-              <Button
-                key={button.label}
-                label={button.label}
-                onClick={() => calculatorStore.input(button.label)}
-              />
-            );
-          }
+          return (
+            <Button
+              key={button.label}
+              label={button.label}
+              onClick={() => {
+                if (button instanceof ClearButton) {
+                  calculatorStore.clear();
+                } else if (button instanceof BackspaceButton) {
+                  calculatorStore.backspace();
+                } else if (button instanceof EqualsButton) {
+                  calculatorStore.calculate();
+                } else {
+                  calculatorStore.input(button.label);
+                }
+              }}
+            />
+          );
         })}
       </div>
     </div>

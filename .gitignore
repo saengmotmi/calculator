@@ -2,3 +2,5 @@ node_modules
 dist
 
 db/**/*.json
+
+install-state.gz

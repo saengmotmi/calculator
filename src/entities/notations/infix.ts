@@ -1,13 +1,12 @@
 import { Evaluator } from "../operations/evaluator";
 import { Notation } from "./notation";
-import { StackManager } from "./stack";
 import { PAREN } from "./token";
 
 export class Infix implements Notation {
-  private stackManager: StackManager;
+  private manager: InfixManager;
 
   constructor(private expression: string, private evaluator: Evaluator) {
-    this.stackManager = new StackManager(this.evaluator);
+    this.manager = new InfixManager(this.evaluator);
   }
 
   evaluate() {
@@ -21,13 +20,13 @@ export class Infix implements Notation {
       } else if (this.isLeftParenthesis(token)) {
         operators.push(token);
       } else if (this.isRightParenthesis(token)) {
-        this.stackManager.processUntilLeftParenthesis(values, operators);
+        this.manager.processUntilLeftParenthesis(values, operators);
       } else {
-        this.stackManager.processOperator(token, values, operators);
+        this.manager.processOperator(token, values, operators);
       }
     });
 
-    this.stackManager.moveAllOperators(values, operators);
+    this.manager.transferRemainingOperators(values, operators);
 
     return values.pop()!;
   }
@@ -47,9 +46,9 @@ export class Infix implements Notation {
       } else if (this.isLeftParenthesis(token)) {
         operators.push(token);
       } else if (this.isRightParenthesis(token)) {
-        this.stackManager.moveUntilLeftParenthesis(output, operators);
+        this.manager.transferUntilLeftParenthesis(output, operators);
       } else {
-        this.stackManager.pushOperatorsWithHigherPrecedence(
+        this.manager.pushOperatorsWithHigherPrecedence(
           token,
           output,
           operators
@@ -57,31 +56,33 @@ export class Infix implements Notation {
       }
     });
 
-    return output.concat(operators.toReversed());
+    this.manager.moveAllTokensToOutput(output, operators);
+
+    return output;
   }
 
   toPrefix() {
     const reversedExpr = this.reverseExpression(this.expression);
     const postfix = new Infix(reversedExpr, this.evaluator).toPostfix();
-    return postfix.toReversed();
+    return postfix.reverse();
   }
 
-  private isNumber(token: string): boolean {
+  private isNumber(token: string) {
     return !isNaN(Number(token));
   }
 
-  private isLeftParenthesis(token: string): boolean {
+  private isLeftParenthesis(token: string) {
     return token === PAREN.LEFT;
   }
 
-  private isRightParenthesis(token: string): boolean {
+  private isRightParenthesis(token: string) {
     return token === PAREN.RIGHT;
   }
 
-  private reverseExpression(expression: string): string {
+  private reverseExpression(expression: string) {
     return expression
       .split("")
-      .toReversed()
+      .reverse()
       .map((char) => {
         if (this.isLeftParenthesis(char)) {
           return PAREN.RIGHT;
@@ -91,5 +92,70 @@ export class Infix implements Notation {
         return char;
       })
       .join("");
+  }
+}
+
+export class InfixManager {
+  constructor(private evaluator: Evaluator) {}
+
+  applyOperator(values: number[], operators: string[]) {
+    const operator = operators.pop()!;
+    const b = values.pop()!;
+    const a = values.pop()!;
+    values.push(this.evaluator.applyOperation(a, b, operator));
+  }
+
+  processOperator(token: string, values: number[], operators: string[]) {
+    while (
+      operators.length &&
+      this.hasHigherOrEqualPrecedence(operators[operators.length - 1], token)
+    ) {
+      this.applyOperator(values, operators);
+    }
+    operators.push(token);
+  }
+
+  processUntilLeftParenthesis(values: number[], operators: string[]) {
+    while (operators.length && operators[operators.length - 1] !== PAREN.LEFT) {
+      this.applyOperator(values, operators);
+    }
+    operators.pop(); // Remove left parenthesis
+  }
+
+  transferRemainingOperators(values: number[], operators: string[]) {
+    while (operators.length) {
+      this.applyOperator(values, operators);
+    }
+  }
+
+  transferUntilLeftParenthesis(output: string[], operators: string[]) {
+    while (operators.length && operators[operators.length - 1] !== PAREN.LEFT) {
+      output.push(operators.pop()!);
+    }
+    operators.pop();
+  }
+
+  pushOperatorsWithHigherPrecedence(
+    token: string,
+    output: string[],
+    operators: string[]
+  ) {
+    while (
+      operators.length &&
+      this.hasHigherOrEqualPrecedence(operators[operators.length - 1], token)
+    ) {
+      output.push(operators.pop()!);
+    }
+    operators.push(token);
+  }
+
+  moveAllTokensToOutput(output: string[], operators: string[]) {
+    while (operators.length) {
+      output.push(operators.pop()!);
+    }
+  }
+
+  private hasHigherOrEqualPrecedence(op1: string, op2: string) {
+    return this.evaluator.precedence[op1] >= this.evaluator.precedence[op2];
   }
 }

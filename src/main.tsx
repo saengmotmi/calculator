@@ -1,5 +1,5 @@
 import { createRoot } from "react-dom/client";
 
-import CalculatorPanel from "./widget/ui/CalculatorPanel";
+import Calculator from "./pages/calculator";
 
-createRoot(document.getElementById("root")!).render(<CalculatorPanel />);
+createRoot(document.getElementById("root")!).render(<Calculator />);

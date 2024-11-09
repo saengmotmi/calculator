@@ -10,28 +10,50 @@ import {
 
 export class ArithmeticCalculator {
   private inputHistory: string[] = [];
+  private currentInput: string = "";
 
   inputNumber(number: string | number) {
-    this.inputHistory.push(`${number}`);
+    // 현재 입력을 문자열로 저장하여 여러 자릿수 숫자 입력을 지원
+    this.currentInput += `${number}`;
   }
 
   inputOperator(operator: OPERATORS) {
+    // 현재 입력이 비어있지 않으면 inputHistory에 추가
+    if (this.currentInput) {
+      this.inputHistory.push(this.currentInput);
+      this.currentInput = "";
+    }
+    // 연산자를 기록
     this.inputHistory.push(`${operator}`);
   }
 
   inputParenthesis(paren: PAREN) {
+    if (this.currentInput) {
+      this.inputHistory.push(this.currentInput);
+      this.currentInput = "";
+    }
     this.inputHistory.push(paren);
   }
 
   clear() {
     this.inputHistory = [];
+    this.currentInput = "";
   }
 
   undo() {
-    this.inputHistory.pop();
+    if (this.currentInput) {
+      this.currentInput = this.currentInput.slice(0, -1);
+    } else {
+      this.inputHistory.pop();
+    }
   }
 
   evaluate() {
+    // 마지막으로 입력한 숫자가 남아있다면 inputHistory에 추가
+    if (this.currentInput) {
+      this.inputHistory.push(this.currentInput);
+      this.currentInput = "";
+    }
     const expression = this.inputHistory.join(" ");
     const calculator = ArithmeticCalculatorFactory.create(expression.trim());
     const result = calculator.evaluate();
@@ -40,7 +62,7 @@ export class ArithmeticCalculator {
   }
 
   getExpression() {
-    return this.inputHistory.join(" ").trim();
+    return [...this.inputHistory, this.currentInput].join(" ").trim();
   }
 }
 

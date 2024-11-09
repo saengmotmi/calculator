@@ -13,6 +13,17 @@ describe("기본 사칙연산 계산기 기능", () => {
     expect(calculator.evaluate()).toBe(5);
   });
 
+  it("두 자리 숫자의 덧셈을 수행할 수 있다", () => {
+    const calculator = new ArithmeticCalculator();
+    // "12 + 3";
+    calculator.inputNumber(1);
+    calculator.inputNumber(2);
+    calculator.inputOperator("+");
+    calculator.inputNumber(3);
+
+    expect(calculator.evaluate()).toBe(15);
+  });
+
   it("두 숫자의 뺄셈을 수행할 수 있다", () => {
     const calculator = new ArithmeticCalculator();
     // "5 - 3";

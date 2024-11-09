@@ -20,6 +20,10 @@ export const useCalculatorKeyInput = () => {
   useKey("*", () => calculatorStore.input("*"));
   useKey("/", () => calculatorStore.input("/"));
 
+  // 괄호 키 입력 처리
+  useKey("(", () => calculatorStore.input("("));
+  useKey(")", () => calculatorStore.input(")"));
+
   // 기타 키 처리
   useKey("Enter", () => calculatorStore.calculate());
   useKey("Backspace", () => calculatorStore.backspace());

@@ -53,7 +53,7 @@ class CalculatorStore {
   }
 
   clear() {
-    this.calculator.clear();
+    this.calculator.clearAll();
     this.result = null;
     this.notify();
   }

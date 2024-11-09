@@ -11,6 +11,7 @@ import {
 export class ArithmeticCalculator {
   private inputHistory: string[] = [];
   private currentInput: string = "";
+  private previousResult: number | null = null; // 마지막 계산 결과 저장
 
   inputNumber(number: string | number) {
     // 현재 입력을 문자열로 저장하여 여러 자릿수 숫자 입력을 지원
@@ -18,12 +19,16 @@ export class ArithmeticCalculator {
   }
 
   inputOperator(operator: OPERATORS) {
-    // 현재 입력이 비어있지 않으면 inputHistory에 추가
     if (this.currentInput) {
+      // 현재 입력된 숫자를 inputHistory에 추가하고 초기화
       this.inputHistory.push(this.currentInput);
       this.currentInput = "";
+    } else if (this.previousResult !== null && this.inputHistory.length === 0) {
+      // 이전 결과를 현재 수식의 시작값으로 설정
+      this.inputHistory.push(`${this.previousResult}`);
     }
-    // 연산자를 기록
+
+    // 연산자를 inputHistory에 추가
     this.inputHistory.push(`${operator}`);
   }
 
@@ -35,9 +40,17 @@ export class ArithmeticCalculator {
     this.inputHistory.push(paren);
   }
 
-  clear() {
+  // 현재 수식만 초기화하고, 이전 결과는 유지
+  clearExpression() {
     this.inputHistory = [];
     this.currentInput = "";
+  }
+
+  // 계산기의 모든 상태를 초기화 (이전 결과 포함)
+  clearAll() {
+    this.inputHistory = [];
+    this.currentInput = "";
+    this.previousResult = null;
   }
 
   undo() {
@@ -49,15 +62,18 @@ export class ArithmeticCalculator {
   }
 
   evaluate() {
-    // 마지막으로 입력한 숫자가 남아있다면 inputHistory에 추가
     if (this.currentInput) {
       this.inputHistory.push(this.currentInput);
       this.currentInput = "";
     }
+
     const expression = this.inputHistory.join(" ");
     const calculator = ArithmeticCalculatorFactory.create(expression.trim());
     const result = calculator.evaluate();
-    this.clear(); // 계산 후 초기화
+
+    this.previousResult = result; // 마지막 결과를 저장
+    this.clearExpression(); // 수식 초기화 (하지만 이전 결과는 유지)
+
     return result;
   }
 

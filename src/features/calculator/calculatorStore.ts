@@ -1,5 +1,5 @@
 import { OPERATORS } from "../../entities/evaluators/arithmetics";
-import { ArithmeticCalculator } from "../../features/calculator/ArithmeticCalculator";
+import { ArithmeticCalculator } from "./ArithmeticCalculator";
 
 type Listener = () => void;
 

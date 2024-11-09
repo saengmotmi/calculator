@@ -2,7 +2,7 @@ import { render, screen, fireEvent, within } from "@testing-library/react";
 import { expect, describe, it, beforeEach } from "vitest";
 
 import CalculatorPanel from ".";
-import { calculatorStore } from "./calculatorStore";
+import { calculatorStore } from "../../../features/calculator/calculatorStore";
 
 beforeEach(() => {
   calculatorStore.clear(); // 테스트 전 상태 초기화

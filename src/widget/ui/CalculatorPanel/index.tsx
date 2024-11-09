@@ -7,7 +7,7 @@ import {
   NumberButton,
   OperatorButton,
 } from "./Button/types";
-import { calculatorStore } from "./calculatorStore";
+import { calculatorStore } from "../../../features/calculator/calculatorStore";
 import Display from "./Display";
 import { Button, buttonRows } from "./Button";
 

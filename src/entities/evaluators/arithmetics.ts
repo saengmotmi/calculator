@@ -2,7 +2,7 @@ import { Evaluator } from "./evaluator";
 
 export type OPERATORS = (typeof OPERATORS)[keyof typeof OPERATORS];
 
-const OPERATORS = {
+export const OPERATORS = {
   PLUS: "+",
   MINUS: "-",
   MULTIPLY: "*",

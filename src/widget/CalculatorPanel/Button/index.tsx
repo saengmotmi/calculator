@@ -1,3 +1,11 @@
+import {
+  BackspaceButton,
+  ClearButton,
+  EqualsButton,
+  NumberButton,
+  OperatorButton,
+} from "./types";
+
 interface ButtonProps {
   label: string;
   onClick: () => void;
@@ -20,3 +28,31 @@ export const Button = ({ label, onClick }: ButtonProps) => {
     </button>
   );
 };
+
+export const buttonRows = [
+  [
+    new NumberButton("7"),
+    new NumberButton("8"),
+    new NumberButton("9"),
+    new OperatorButton("/"),
+  ],
+  [
+    new NumberButton("4"),
+    new NumberButton("5"),
+    new NumberButton("6"),
+    new OperatorButton("*"),
+  ],
+  [
+    new NumberButton("1"),
+    new NumberButton("2"),
+    new NumberButton("3"),
+    new OperatorButton("-"),
+  ],
+  [
+    new NumberButton("0"),
+    new OperatorButton("("),
+    new OperatorButton(")"),
+    new OperatorButton("+"),
+  ],
+  [new ClearButton(), new BackspaceButton(), new EqualsButton()],
+];

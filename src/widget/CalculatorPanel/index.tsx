@@ -9,7 +9,7 @@ import {
 } from "./Button/types";
 import { calculatorStore } from "./calculatorStore";
 import Display from "./Display";
-import { Button } from "./Button";
+import { Button, buttonRows } from "./Button";
 
 const CalculatorPanel = () => {
   const { expression, result } = useSyncExternalStore(
@@ -27,37 +27,37 @@ const CalculatorPanel = () => {
           gap: "10px",
         }}
       >
-        {buttonRows.flat().map((btn) => {
-          if (btn instanceof ClearButton) {
+        {buttonRows.flat().map((button) => {
+          if (button instanceof ClearButton) {
             return (
               <Button
-                key={btn.label}
-                label={btn.label}
+                key={button.label}
+                label={button.label}
                 onClick={() => calculatorStore.clear()}
               />
             );
-          } else if (btn instanceof BackspaceButton) {
+          } else if (button instanceof BackspaceButton) {
             return (
               <Button
-                key={btn.label}
-                label={btn.label}
+                key={button.label}
+                label={button.label}
                 onClick={() => calculatorStore.backspace()}
               />
             );
-          } else if (btn instanceof EqualsButton) {
+          } else if (button instanceof EqualsButton) {
             return (
               <Button
-                key={btn.label}
-                label={btn.label}
+                key={button.label}
+                label={button.label}
                 onClick={() => calculatorStore.calculate()}
               />
             );
           } else {
             return (
               <Button
-                key={btn.label}
-                label={btn.label}
-                onClick={() => calculatorStore.input(btn.label)}
+                key={button.label}
+                label={button.label}
+                onClick={() => calculatorStore.input(button.label)}
               />
             );
           }
@@ -68,31 +68,3 @@ const CalculatorPanel = () => {
 };
 
 export default CalculatorPanel;
-
-const buttonRows = [
-  [
-    new NumberButton("7"),
-    new NumberButton("8"),
-    new NumberButton("9"),
-    new OperatorButton("/"),
-  ],
-  [
-    new NumberButton("4"),
-    new NumberButton("5"),
-    new NumberButton("6"),
-    new OperatorButton("*"),
-  ],
-  [
-    new NumberButton("1"),
-    new NumberButton("2"),
-    new NumberButton("3"),
-    new OperatorButton("-"),
-  ],
-  [
-    new NumberButton("0"),
-    new OperatorButton("("),
-    new OperatorButton(")"),
-    new OperatorButton("+"),
-  ],
-  [new ClearButton(), new BackspaceButton(), new EqualsButton()],
-];

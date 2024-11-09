@@ -4,12 +4,15 @@ import { BackspaceButton, ClearButton, EqualsButton } from "./Button/types";
 import { calculatorStore } from "../../../features/calculator/calculatorStore";
 import Display from "./Display";
 import { Button, buttonRows } from "./Button";
+import { useCalculatorKeyInput } from "./hooks";
 
 const CalculatorPanel = () => {
   const { expression, result } = useSyncExternalStore(
     calculatorStore.subscribe,
     calculatorStore.getSnapshot
   );
+
+  useCalculatorKeyInput();
 
   return (
     <div>

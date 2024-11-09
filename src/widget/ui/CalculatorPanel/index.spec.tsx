@@ -105,3 +105,70 @@ describe("CalculatorPanel 컴포넌트", () => {
     expect(expressionDisplay).toBeInTheDocument();
   });
 });
+
+describe("CalculatorPanel 컴포넌트 - 키보드 입력 테스트", () => {
+  it("키보드 입력으로 숫자를 입력할 수 있다", () => {
+    render(<CalculatorPanel />);
+
+    // "1"과 "2" 키 입력
+    fireEvent.keyDown(window, { key: "1" });
+    fireEvent.keyDown(window, { key: "2" });
+
+    const display = screen.getByRole("display");
+    const expressionDisplay = within(display).getByText("12");
+    expect(expressionDisplay).toBeInTheDocument();
+  });
+
+  it("키보드 입력으로 연산자를 입력할 수 있다", () => {
+    render(<CalculatorPanel />);
+
+    // "1", "+", "2" 키 입력
+    fireEvent.keyDown(window, { key: "1" });
+    fireEvent.keyDown(window, { key: "+" });
+    fireEvent.keyDown(window, { key: "2" });
+
+    const display = screen.getByRole("display");
+    const expressionDisplay = within(display).getByText("1 + 2");
+    expect(expressionDisplay).toBeInTheDocument();
+  });
+
+  it("Enter 키로 계산을 수행할 수 있다", () => {
+    render(<CalculatorPanel />);
+
+    // "1", "+", "2", "Enter" 키 입력
+    fireEvent.keyDown(window, { key: "1" });
+    fireEvent.keyDown(window, { key: "+" });
+    fireEvent.keyDown(window, { key: "2" });
+    fireEvent.keyDown(window, { key: "Enter" });
+
+    const display = screen.getByRole("display");
+    const resultDisplay = within(display).getByText("3"); // 1 + 2 = 3
+    expect(resultDisplay).toBeInTheDocument();
+  });
+
+  it("Backspace 키로 마지막 입력을 삭제할 수 있다", () => {
+    render(<CalculatorPanel />);
+
+    // "1", "2", "Backspace" 키 입력
+    fireEvent.keyDown(window, { key: "1" });
+    fireEvent.keyDown(window, { key: "2" });
+    fireEvent.keyDown(window, { key: "Backspace" });
+
+    const display = screen.getByRole("display");
+    const expressionDisplay = within(display).getByText("1");
+    expect(expressionDisplay).toBeInTheDocument();
+  });
+
+  it("Escape 키로 계산기를 초기화할 수 있다", () => {
+    render(<CalculatorPanel />);
+
+    // "1", "2", "Escape" 키 입력
+    fireEvent.keyDown(window, { key: "1" });
+    fireEvent.keyDown(window, { key: "2" });
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    const display = screen.getByRole("display");
+    const expressionDisplay = within(display).getByText("0");
+    expect(expressionDisplay).toBeInTheDocument();
+  });
+});

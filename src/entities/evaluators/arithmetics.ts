@@ -28,7 +28,9 @@ export class ArithmeticEvaluator implements Evaluator {
       case OPERATORS.MULTIPLY:
         return a * b;
       case OPERATORS.DIVIDE:
-        if (b === 0) throw new Error("Division by zero");
+        if (b === 0) {
+          throw new Error("Division by zero");
+        }
         return a / b;
       default:
         throw new Error(`Unknown operator: ${operator}`);

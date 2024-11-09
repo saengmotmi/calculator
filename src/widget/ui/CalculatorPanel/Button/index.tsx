@@ -23,8 +23,6 @@ export const Button = ({ label, onClick }: ButtonProps) => {
   );
 };
 
-export const ClearButton = () => {};
-
 export const buttonRows = [
   [
     new Buttons.NumberButton("7"),

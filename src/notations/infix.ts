@@ -1,20 +1,13 @@
+import { Evaluator } from "../operations/evaluator";
 import { Notation } from "./notation";
-import { tokenizeExpression } from "./token";
 
 export class Infix implements Notation {
-  private precedence: { [key: string]: number } = {
-    "+": 1,
-    "-": 1,
-    "*": 2,
-    "/": 2,
-  };
+  constructor(private expression: string, private evaluator: Evaluator) {}
 
-  constructor(private expression: string) {}
-
-  evaluate(): number {
+  evaluate() {
     const values: number[] = [];
     const operators: string[] = [];
-    const tokens = tokenizeExpression(this.expression);
+    const tokens = this.evaluator.tokenizeExpression(this.expression);
 
     tokens.forEach((token) => {
       if (!isNaN(Number(token))) {
@@ -29,8 +22,8 @@ export class Infix implements Notation {
       } else {
         while (
           operators.length &&
-          this.precedence[operators[operators.length - 1]] >=
-            this.precedence[token]
+          this.evaluator.precedence[operators[operators.length - 1]] >=
+            this.evaluator.precedence[token]
         ) {
           this.applyOperator(values, operators.pop()!);
         }
@@ -48,30 +41,18 @@ export class Infix implements Notation {
   private applyOperator(values: number[], operator: string) {
     const b = values.pop()!;
     const a = values.pop()!;
-    switch (operator) {
-      case "+":
-        values.push(a + b);
-        break;
-      case "-":
-        values.push(a - b);
-        break;
-      case "*":
-        values.push(a * b);
-        break;
-      case "/":
-        values.push(a / b);
-        break;
-    }
+    const result = this.evaluator.applyOperation(a, b, operator);
+    values.push(result);
   }
 
-  toInfix(): string[] {
-    return tokenizeExpression(this.expression);
+  toInfix() {
+    return this.evaluator.tokenizeExpression(this.expression);
   }
 
-  toPostfix(): string[] {
+  toPostfix() {
     const output: string[] = [];
     const operators: string[] = [];
-    const tokens = tokenizeExpression(this.expression);
+    const tokens = this.evaluator.tokenizeExpression(this.expression);
 
     tokens.forEach((token) => {
       if (!isNaN(Number(token))) {
@@ -86,8 +67,8 @@ export class Infix implements Notation {
       } else {
         while (
           operators.length &&
-          this.precedence[operators[operators.length - 1]] >=
-            this.precedence[token]
+          this.evaluator.precedence[operators[operators.length - 1]] >=
+            this.evaluator.precedence[token]
         ) {
           output.push(operators.pop()!);
         }
@@ -102,7 +83,7 @@ export class Infix implements Notation {
     return output;
   }
 
-  toPrefix(): string[] {
+  toPrefix() {
     const reversedExpr = this.expression
       .split("")
       .reverse()
@@ -113,7 +94,7 @@ export class Infix implements Notation {
       })
       .join("");
 
-    const postfix = new Infix(reversedExpr).toPostfix();
+    const postfix = new Infix(reversedExpr, this.evaluator).toPostfix();
     return postfix.reverse();
   }
 }

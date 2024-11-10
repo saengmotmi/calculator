@@ -26,6 +26,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "test": "vitest"
+    "test": "vitest",
+    "build": "vite build"
   }
 }

@@ -4,11 +4,11 @@ import { Postfix } from "../../entities/notations/postfix";
 import { Prefix } from "../../entities/notations/prefix";
 import { PAREN } from "../../entities/notations/token";
 import {
-  ArithmeticEvaluator,
+  BasicMathEvaluator,
   OPERATORS,
-} from "../../entities/evaluators/arithmetics";
+} from "../../entities/evaluators/basicMath";
 
-export class ArithmeticCalculator {
+export class BasicMathCalculator {
   private inputHistory: string[] = [];
   private currentInput: string = "";
   private previousResult: number | null = null; // 마지막 계산 결과 저장
@@ -68,7 +68,7 @@ export class ArithmeticCalculator {
     }
 
     const expression = this.inputHistory.join(" ");
-    const calculator = ArithmeticCalculatorFactory.create(expression.trim());
+    const calculator = BasicMathCalculatorFactory.create(expression.trim());
     const result = calculator.evaluate();
 
     this.previousResult = result; // 마지막 결과를 저장
@@ -82,9 +82,9 @@ export class ArithmeticCalculator {
   }
 }
 
-class ArithmeticCalculatorFactory {
+class BasicMathCalculatorFactory {
   static create(expression: string, type: NotationType = "infix"): Notation {
-    const evaluator = new ArithmeticEvaluator();
+    const evaluator = new BasicMathEvaluator();
 
     switch (type) {
       case "infix":

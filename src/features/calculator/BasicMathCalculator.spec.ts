@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { ArithmeticCalculator } from "./ArithmeticCalculator";
+import { BasicMathCalculator } from "./BasicMathCalculator";
 
 describe("기본 사칙연산 계산기 기능", () => {
   it("두 숫자의 덧셈을 수행할 수 있다", () => {
-    const calculator = new ArithmeticCalculator();
+    const calculator = new BasicMathCalculator();
     // "2 + 3";
     calculator.inputNumber(2);
     calculator.inputOperator("+");
@@ -14,7 +14,7 @@ describe("기본 사칙연산 계산기 기능", () => {
   });
 
   it("두 자리 숫자의 덧셈을 수행할 수 있다", () => {
-    const calculator = new ArithmeticCalculator();
+    const calculator = new BasicMathCalculator();
     // "12 + 3";
     calculator.inputNumber(1);
     calculator.inputNumber(2);
@@ -25,7 +25,7 @@ describe("기본 사칙연산 계산기 기능", () => {
   });
 
   it("두 숫자의 뺄셈을 수행할 수 있다", () => {
-    const calculator = new ArithmeticCalculator();
+    const calculator = new BasicMathCalculator();
     // "5 - 3";
     calculator.inputNumber(5);
     calculator.inputOperator("-");
@@ -35,7 +35,7 @@ describe("기본 사칙연산 계산기 기능", () => {
   });
 
   it("두 숫자의 곱셈을 수행할 수 있다", () => {
-    const calculator = new ArithmeticCalculator();
+    const calculator = new BasicMathCalculator();
     // "4 * 3";
     calculator.inputNumber(4);
     calculator.inputOperator("*");
@@ -45,7 +45,7 @@ describe("기본 사칙연산 계산기 기능", () => {
   });
 
   it("두 숫자의 나눗셈을 수행할 수 있다", () => {
-    const calculator = new ArithmeticCalculator();
+    const calculator = new BasicMathCalculator();
     // "10 / 2";
     calculator.inputNumber(10);
     calculator.inputOperator("/");
@@ -55,7 +55,7 @@ describe("기본 사칙연산 계산기 기능", () => {
   });
 
   it("연산자 우선순위를 올바르게 처리할 수 있다", () => {
-    const calculator = new ArithmeticCalculator();
+    const calculator = new BasicMathCalculator();
     // "2 + 3 * 4";
     calculator.inputNumber(2);
     calculator.inputOperator("+");
@@ -67,7 +67,7 @@ describe("기본 사칙연산 계산기 기능", () => {
   });
 
   it("괄호를 사용하여 우선순위를 변경할 수 있다", () => {
-    const calculator = new ArithmeticCalculator();
+    const calculator = new BasicMathCalculator();
     // "( 2 + 3 ) * 4";
     calculator.inputParenthesis("(");
     calculator.inputNumber(2);
@@ -81,7 +81,7 @@ describe("기본 사칙연산 계산기 기능", () => {
   });
 
   it("중첩된 괄호를 올바르게 처리할 수 있다", () => {
-    const calculator = new ArithmeticCalculator();
+    const calculator = new BasicMathCalculator();
     calculator.inputNumber(2);
     calculator.inputOperator("*");
     calculator.inputParenthesis("(");
@@ -98,7 +98,7 @@ describe("기본 사칙연산 계산기 기능", () => {
   });
 
   it("0으로 나누기를 시도할 경우 오류를 발생시킨다", () => {
-    const calculator = new ArithmeticCalculator();
+    const calculator = new BasicMathCalculator();
     // "5 / 0";
     calculator.inputNumber(5);
     calculator.inputOperator("/");

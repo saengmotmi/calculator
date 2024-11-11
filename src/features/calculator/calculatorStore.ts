@@ -1,10 +1,10 @@
-import { OPERATORS } from "../../entities/evaluators/arithmetics";
-import { ArithmeticCalculator } from "./ArithmeticCalculator";
+import { OPERATORS } from "../../entities/evaluators/basicMath";
+import { BasicMathCalculator } from "./BasicMathCalculator";
 
 type Listener = () => void;
 
 class CalculatorStore {
-  private calculator = new ArithmeticCalculator();
+  private calculator = new BasicMathCalculator();
   private listeners: Set<Listener> = new Set();
 
   private result: number | null = null; // 캐시된 결과

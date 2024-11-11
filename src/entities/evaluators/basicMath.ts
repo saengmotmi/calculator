@@ -16,7 +16,7 @@ const PRECEDENCE: { [operator: string]: number } = {
   [OPERATORS.DIVIDE]: 2,
 };
 
-export class ArithmeticEvaluator implements Evaluator {
+export class BasicMathEvaluator implements Evaluator {
   precedence = PRECEDENCE;
 
   applyOperation(a: number, b: number, operator: string) {
@@ -38,10 +38,10 @@ export class ArithmeticEvaluator implements Evaluator {
   }
 
   tokenizeExpression(expression: string) {
-    const isArithmeticTokenRegex = /(\d+|\+|\-|\*|\/|\(|\))/;
+    const isBasicMathTokenRegex = /(\d+|\+|\-|\*|\/|\(|\))/;
 
     return expression
-      .split(isArithmeticTokenRegex)
+      .split(isBasicMathTokenRegex)
       .map((token) => token.trim())
       .filter((token) => token.length > 0);
   }

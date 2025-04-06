@@ -5,6 +5,7 @@ import {
   Token,
   initialCalculatorState,
 } from "./CalculatorState";
+import { BigNumber } from "../BigNumber";
 
 /**
  * 숫자 토큰 생성
@@ -201,61 +202,9 @@ function getOperatorPrecedence(operator: string): number {
 
 /**
  * 연산자 적용 처리
- * 큰 숫자에 대해 더 안정적인 연산 제공
+ * 순수하게 기본 연산만 수행, 복잡한 계산은 evaluateExpression에서 처리
  */
 function applyOperator(a: number, b: number, operator: string): number {
-  // 큰 정수에 대한 안전 체크
-  const isLargeInteger =
-    (Number.isInteger(a) && Math.abs(a) > Number.MAX_SAFE_INTEGER / 10) ||
-    (Number.isInteger(b) && Math.abs(b) > Number.MAX_SAFE_INTEGER / 10);
-
-  // 정수 연산에 대해 BigInt 사용 시도
-  if (isLargeInteger && Number.isInteger(a) && Number.isInteger(b)) {
-    try {
-      let result: bigint;
-      const bigA = BigInt(Math.round(a)); // 혹시 모를 부동소수점 오차 방지
-      const bigB = BigInt(Math.round(b));
-
-      switch (operator) {
-        case "+":
-          result = bigA + bigB;
-          break;
-        case "-":
-          result = bigA - bigB;
-          break;
-        case "*":
-          result = bigA * bigB;
-          break;
-        case "/":
-          if (bigB === 0n) {
-            throw {
-              type: CalculatorErrorType.DIVISION_BY_ZERO,
-              details: "Division by zero",
-            };
-          }
-
-          // BigInt 나눗셈은 소수점 결과를 지원하지 않으므로,
-          // 일반 숫자로 변환하여 수행
-          return Number(a) / Number(b);
-        default:
-          throw {
-            type: CalculatorErrorType.UNKNOWN_ERROR,
-            details: `Unknown operator: ${operator}`,
-          };
-      }
-
-      // BigInt 결과를 Number로 안전하게 변환 (범위 체크)
-      const numberResult = Number(result);
-      if (!Number.isFinite(numberResult)) {
-        return Number.MAX_SAFE_INTEGER * (result < 0n ? -1 : 1);
-      }
-      return numberResult;
-    } catch (e) {
-      // BigInt 처리 실패 시 일반 연산으로 진행
-    }
-  }
-
-  // 일반 연산
   switch (operator) {
     case "+":
       return a + b;
@@ -280,6 +229,66 @@ function applyOperator(a: number, b: number, operator: string): number {
 }
 
 /**
+ * 중위 표기식을 후위 표기식으로 변환 (Shunting Yard 알고리즘)
+ */
+function convertToPostfix(tokens: Token[]): Token[] {
+  const output: Token[] = [];
+  const operators: Token[] = [];
+
+  for (const token of tokens) {
+    if (token.type === "NUMBER") {
+      output.push(token);
+    } else if (token.type === "OPERATOR") {
+      while (
+        operators.length > 0 &&
+        operators[operators.length - 1].type === "OPERATOR" &&
+        getOperatorPrecedence(operators[operators.length - 1].value) >=
+          getOperatorPrecedence(token.value)
+      ) {
+        output.push(operators.pop()!);
+      }
+      operators.push(token);
+    } else if (token.type === "LEFT_PAREN") {
+      operators.push(token);
+    } else if (token.type === "RIGHT_PAREN") {
+      while (
+        operators.length > 0 &&
+        operators[operators.length - 1].type !== "LEFT_PAREN"
+      ) {
+        output.push(operators.pop()!);
+      }
+
+      // 왼쪽 괄호 제거
+      if (
+        operators.length > 0 &&
+        operators[operators.length - 1].type === "LEFT_PAREN"
+      ) {
+        operators.pop();
+      } else {
+        throw {
+          type: CalculatorErrorType.SYNTAX_ERROR,
+          details: "Mismatched parentheses",
+        };
+      }
+    }
+  }
+
+  // 남은 연산자 모두 출력
+  while (operators.length > 0) {
+    const op = operators.pop()!;
+    if (op.type === "LEFT_PAREN") {
+      throw {
+        type: CalculatorErrorType.SYNTAX_ERROR,
+        details: "Mismatched parentheses",
+      };
+    }
+    output.push(op);
+  }
+
+  return output;
+}
+
+/**
  * 표현식 계산 처리
  */
 export function evaluateExpression(state: CalculatorState): CalculatorState {
@@ -299,97 +308,23 @@ export function evaluateExpression(state: CalculatorState): CalculatorState {
       };
     }
 
-    // 중위 표기식을 후위 표기식으로 변환 (Shunting Yard 알고리즘)
-    const output: Token[] = [];
-    const operators: Token[] = [];
+    // 정밀 계산이 필요한지 확인
+    const needsPreciseCalculation =
+      shouldUsePreciseCalculation(tokensToEvaluate);
 
-    for (const token of tokensToEvaluate) {
-      if (token.type === "NUMBER") {
-        output.push(token);
-      } else if (token.type === "OPERATOR") {
-        while (
-          operators.length > 0 &&
-          operators[operators.length - 1].type === "OPERATOR" &&
-          getOperatorPrecedence(operators[operators.length - 1].value) >=
-            getOperatorPrecedence(token.value)
-        ) {
-          output.push(operators.pop()!);
-        }
-        operators.push(token);
-      } else if (token.type === "LEFT_PAREN") {
-        operators.push(token);
-      } else if (token.type === "RIGHT_PAREN") {
-        while (
-          operators.length > 0 &&
-          operators[operators.length - 1].type !== "LEFT_PAREN"
-        ) {
-          output.push(operators.pop()!);
-        }
+    // 중위 표기식을 후위 표기식으로 변환
+    const postfixTokens = convertToPostfix(tokensToEvaluate);
 
-        // 왼쪽 괄호 제거
-        if (
-          operators.length > 0 &&
-          operators[operators.length - 1].type === "LEFT_PAREN"
-        ) {
-          operators.pop();
-        } else {
-          throw {
-            type: CalculatorErrorType.SYNTAX_ERROR,
-            details: "Mismatched parentheses",
-          };
-        }
-      }
-    }
-
-    // 남은 연산자 모두 출력
-    while (operators.length > 0) {
-      const op = operators.pop()!;
-      if (op.type === "LEFT_PAREN") {
-        throw {
-          type: CalculatorErrorType.SYNTAX_ERROR,
-          details: "Mismatched parentheses",
-        };
-      }
-      output.push(op);
-    }
-
-    // 후위 표기식 계산
-    const valueStack: number[] = [];
-
-    for (const token of output) {
-      if (token.type === "NUMBER") {
-        // 큰 숫자 처리: 문자열 숫자가 안전한 정수 범위를 초과하는지 확인
-        const numValue = Number(token.value);
-        valueStack.push(numValue);
-      } else if (token.type === "OPERATOR") {
-        if (valueStack.length < 2) {
-          throw {
-            type: CalculatorErrorType.INCOMPLETE_EXPRESSION,
-            details: "Invalid expression",
-          };
-        }
-        const b = valueStack.pop()!;
-        const a = valueStack.pop()!;
-
-        // 안정적인 계산을 위해 개선된 연산자 적용 함수 사용
-        const result = applyOperator(a, b, token.value);
-        valueStack.push(result);
-      }
-    }
-
-    // 결과가 정확히 하나여야 함
-    if (valueStack.length !== 1) {
-      throw {
-        type: CalculatorErrorType.INCOMPLETE_EXPRESSION,
-        details: "Invalid expression",
-      };
-    }
+    // 계산 수행 (필요시 정밀 계산 사용)
+    const result = needsPreciseCalculation
+      ? calculateWithPrecision(postfixTokens)
+      : calculateStandard(postfixTokens);
 
     // 결과 반환
     return {
       tokens: [],
       currentInput: "",
-      result: valueStack[0],
+      result,
       mode: CalculatorMode.RESULT,
       error: null,
     };
@@ -400,6 +335,107 @@ export function evaluateExpression(state: CalculatorState): CalculatorState {
       error: err as { type: CalculatorErrorType; details: string },
     };
   }
+}
+
+/**
+ * 정밀 계산이 필요한지 확인
+ */
+function shouldUsePreciseCalculation(tokens: Token[]): boolean {
+  // 큰 숫자 확인
+  const hasLargeNumbers = tokens.some((token) => {
+    if (token.type === "NUMBER") {
+      const num = Number(token.value);
+      return Math.abs(num) > 1e10 || token.value.length > 15;
+    }
+    return false;
+  });
+
+  // 나눗셈 연산 확인
+  const hasDivision = tokens.some(
+    (token) => token.type === "OPERATOR" && token.value === "/"
+  );
+
+  return hasLargeNumbers || hasDivision;
+}
+
+/**
+ * 일반 계산 수행 (작은 숫자, 정수 계산)
+ */
+function calculateStandard(postfixTokens: Token[]): number {
+  const valueStack: number[] = [];
+
+  for (const token of postfixTokens) {
+    if (token.type === "NUMBER") {
+      valueStack.push(Number(token.value));
+    } else if (token.type === "OPERATOR") {
+      if (valueStack.length < 2) {
+        throw {
+          type: CalculatorErrorType.INCOMPLETE_EXPRESSION,
+          details: "Invalid expression",
+        };
+      }
+      const b = valueStack.pop()!;
+      const a = valueStack.pop()!;
+
+      valueStack.push(applyOperator(a, b, token.value));
+    }
+  }
+
+  if (valueStack.length !== 1) {
+    throw {
+      type: CalculatorErrorType.INCOMPLETE_EXPRESSION,
+      details: "Invalid expression",
+    };
+  }
+
+  return valueStack[0];
+}
+
+/**
+ * 정밀 계산 수행 (큰 숫자, 나눗셈 등)
+ */
+function calculateWithPrecision(postfixTokens: Token[]): number {
+  const valueStack: string[] = [];
+
+  for (const token of postfixTokens) {
+    if (token.type === "NUMBER") {
+      valueStack.push(token.value);
+    } else if (token.type === "OPERATOR") {
+      if (valueStack.length < 2) {
+        throw {
+          type: CalculatorErrorType.INCOMPLETE_EXPRESSION,
+          details: "Invalid expression",
+        };
+      }
+      const b = valueStack.pop()!;
+      const a = valueStack.pop()!;
+
+      // BigNumber로 정밀한 계산 수행
+      const result = BigNumber.calculate(a, token.value, b);
+
+      // 오류 검사
+      if (result.startsWith("Error:")) {
+        throw {
+          type:
+            token.value === "/" && b === "0"
+              ? CalculatorErrorType.DIVISION_BY_ZERO
+              : CalculatorErrorType.UNKNOWN_ERROR,
+          details: result.substring(7), // 'Error: ' 제거
+        };
+      }
+
+      valueStack.push(result);
+    }
+  }
+
+  if (valueStack.length !== 1) {
+    throw {
+      type: CalculatorErrorType.INCOMPLETE_EXPRESSION,
+      details: "Invalid expression",
+    };
+  }
+
+  return Number(valueStack[0]);
 }
 
 /**

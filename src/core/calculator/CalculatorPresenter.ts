@@ -1,6 +1,7 @@
 import { CalculatorCore } from "./CalculatorCore";
 import { stateToString } from "./domain/CalculatorDomain";
 import { CalculatorErrorType, CalculatorMode } from "./domain/CalculatorState";
+import { BigNumber } from "./BigNumber";
 
 /**
  * UI 디스플레이 데이터 인터페이스
@@ -20,7 +21,7 @@ export interface CalculatorDisplayData {
 }
 
 /**
- * BigInt를 사용하여 대규모 정수 계산 처리
+ * BigNumber를 사용하여 정확한 계산 수행
  * 문자열로 된 숫자와 연산자를 받아 정확한 계산 결과를 반환
  */
 export function formatResultWithBigInt(
@@ -30,147 +31,11 @@ export function formatResultWithBigInt(
 ): string {
   // 단일 숫자 포맷 (연산자 없음)
   if (!operator || !num2) {
-    // 소수점이 있는 경우 BigInt를 사용할 수 없음
-    if (num1.includes(".")) {
-      return num1;
-    }
-
-    try {
-      // BigInt 변환 후 다시 문자열로 (정확한 정수 표현)
-      const bigNum = BigInt(num1);
-      return bigNum.toString();
-    } catch (e) {
-      // 변환 실패 시 원본 반환
-      return num1;
-    }
+    return BigNumber.from(num1).toString();
   }
 
-  // 소수점 처리를 위한 변수들
-  let hasFraction = false;
-  let decimalPlaces1 = 0;
-  let decimalPlaces2 = 0;
-
-  // 소수점 위치 파악
-  if (num1.includes(".")) {
-    hasFraction = true;
-    decimalPlaces1 = num1.split(".")[1].length;
-    num1 = num1.replace(".", "");
-  }
-
-  if (num2.includes(".")) {
-    hasFraction = true;
-    decimalPlaces2 = num2.split(".")[1].length;
-    num2 = num2.replace(".", "");
-  }
-
-  try {
-    // BigInt로 변환
-    const bigNum1 = BigInt(num1);
-    const bigNum2 = BigInt(num2);
-    let result: bigint;
-
-    // 연산 수행
-    switch (operator) {
-      case "+":
-        // 소수점 위치 정규화
-        if (hasFraction) {
-          const maxDecimals = Math.max(decimalPlaces1, decimalPlaces2);
-          const factor1 = BigInt(10 ** (maxDecimals - decimalPlaces1));
-          const factor2 = BigInt(10 ** (maxDecimals - decimalPlaces2));
-          result = bigNum1 * factor1 + bigNum2 * factor2;
-          return formatBigIntWithFraction(result, maxDecimals);
-        }
-        result = bigNum1 + bigNum2;
-        break;
-
-      case "-":
-        if (hasFraction) {
-          const maxDecimals = Math.max(decimalPlaces1, decimalPlaces2);
-          const factor1 = BigInt(10 ** (maxDecimals - decimalPlaces1));
-          const factor2 = BigInt(10 ** (maxDecimals - decimalPlaces2));
-          result = bigNum1 * factor1 - bigNum2 * factor2;
-          return formatBigIntWithFraction(result, maxDecimals);
-        }
-        result = bigNum1 - bigNum2;
-        break;
-
-      case "*":
-        const totalDecimalPlaces = decimalPlaces1 + decimalPlaces2;
-        result = bigNum1 * bigNum2;
-        if (hasFraction) {
-          return formatBigIntWithFraction(result, totalDecimalPlaces);
-        }
-        break;
-
-      case "/":
-        if (bigNum2 === BigInt(0)) {
-          return "Error: Division by zero";
-        }
-
-        // 나눗셈은 특별 처리 필요 (BigInt는 소수점을 지원하지 않음)
-        // 정밀한 소수점 표현을 위해 스케일 업
-        const precision = 20; // 소수점 이하 자릿수
-        const scaleFactor = BigInt(10 ** precision);
-        const scaledNum = bigNum1 * scaleFactor;
-        const quotient = scaledNum / bigNum2;
-
-        // 소수점 표현을 위한 문자열 처리
-        const quotientStr = quotient.toString();
-        const integerPart = quotientStr.slice(
-          0,
-          Math.max(0, quotientStr.length - precision)
-        );
-        const fractionalPart = quotientStr
-          .slice(-precision)
-          .padStart(precision, "0");
-
-        // 불필요한 0 제거
-        const trimmedFractional = fractionalPart.replace(/0+$/, "");
-
-        return trimmedFractional.length > 0
-          ? `${integerPart || "0"}.${trimmedFractional}`
-          : integerPart || "0";
-
-      default:
-        return "Error: Unknown operator";
-    }
-
-    return result.toString();
-  } catch (e) {
-    return `Error: ${e instanceof Error ? e.message : "Calculation error"}`;
-  }
-}
-
-/**
- * BigInt 값을 소수점이 있는 형식으로 포맷팅
- */
-function formatBigIntWithFraction(
-  value: bigint,
-  decimalPlaces: number
-): string {
-  const valueStr = value.toString();
-
-  if (decimalPlaces <= 0) {
-    return valueStr;
-  }
-
-  if (valueStr.length <= decimalPlaces) {
-    // 소수점 앞에 0을 추가해야 하는 경우
-    const padded = valueStr.padStart(decimalPlaces + 1, "0");
-    return `0.${padded.slice(1)}`;
-  }
-
-  // 소수점 위치 계산
-  const integerPartLength = valueStr.length - decimalPlaces;
-  const integerPart = valueStr.slice(0, integerPartLength);
-  const fractionalPart = valueStr.slice(integerPartLength);
-
-  // 불필요한 0 제거
-  const trimmedFractional = fractionalPart.replace(/0+$/, "");
-
-  return trimmedFractional.length > 0
-    ? `${integerPart}.${trimmedFractional}`
-    : integerPart;
+  // BigNumber 클래스의 정적 메서드로 계산 위임
+  return BigNumber.calculate(num1, operator, num2);
 }
 
 /**
@@ -318,40 +183,38 @@ export class CalculatorPresenter {
     // 0인 경우 그대로 반환
     if (value === 0) return "0";
 
-    // 문자열 변환
     const valueStr = value.toString();
 
-    // 정수이고 안전한 정수 범위를 벗어나는 경우 BigInt 사용
-    if (
-      Number.isInteger(value) &&
-      (value > Number.MAX_SAFE_INTEGER || value < Number.MIN_SAFE_INTEGER)
-    ) {
+    // 큰 숫자이거나 정수인 경우 BigNumber 사용
+    if (Number.isInteger(value) || Math.abs(value) > 1e10) {
       try {
-        return formatResultWithBigInt(valueStr);
+        return BigNumber.from(valueStr).toString();
       } catch (e) {
-        // BigInt 처리 실패시 일반 방식으로 계속 진행
+        // BigNumber 처리 실패 시 일반 방식으로 계속 진행
       }
     }
 
-    // 매우 큰 숫자나 매우 작은 숫자는 지수 표기법으로 변환
+    // 지수 표기법 사용 여부 결정
     if (Math.abs(value) > 1e15 || Math.abs(value) < 1e-10) {
       return value.toExponential(10).replace(/\.?0+e/, "e");
     }
 
-    // 정수인지 확인
-    if (Number.isInteger(value)) {
-      // 정수는 그대로 문자열로 변환
-      return valueStr;
+    // 소수점 있는 일반 숫자는 정밀도 조정 (부동소수점 오차 처리)
+    if (valueStr.includes(".")) {
+      try {
+        // BigNumber로 정확하게 표현
+        return BigNumber.from(valueStr).toString();
+      } catch (e) {
+        // 실패 시 기존 방식 사용
+        const precision = 15;
+        const formattedNumber = parseFloat(
+          value.toPrecision(precision)
+        ).toString();
+        return formattedNumber.replace(/\.?0+$/, "");
+      }
     }
 
-    // 소수점 있는 숫자의 경우 정밀도 조정
-    // 1. 적절한 정밀도로 변환 (15자리 정도가 안전)
-    // 2. 문자열로 변환 후 불필요한 0 제거
-    const precision = 15;
-    const formattedNumber = parseFloat(value.toPrecision(precision)).toString();
-
-    // 소수점 이하 불필요한 0 제거
-    return formattedNumber.replace(/\.?0+$/, "");
+    return valueStr;
   }
 
   /**

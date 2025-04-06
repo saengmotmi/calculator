@@ -1,14 +1,5 @@
-import { Lexer } from "../../entities/lexer/Lexer";
 import { Parser } from "../../entities/parser/Parser";
-import { ExpressionProcessor } from "../../entities/processor/ExpressionProcessor";
-import {
-  Token,
-  isLeftParenToken,
-  isRightParenToken,
-  isNumberToken,
-  isOperatorToken,
-} from "../../entities/tokens/Token";
-import { Operator, OperatorType } from "../../entities/tokens/Operator";
+import { OperatorType } from "../../entities/tokens/Operator";
 import { ICalculator } from "./ICalculator";
 
 /**
@@ -19,11 +10,9 @@ export class MathCalculator implements ICalculator {
   private currentInput: string = "";
   private previousResult: number | null = null;
   private parser: Parser;
-  private processor: ExpressionProcessor;
 
   constructor() {
     this.parser = new Parser();
-    this.processor = new ExpressionProcessor();
   }
 
   /**

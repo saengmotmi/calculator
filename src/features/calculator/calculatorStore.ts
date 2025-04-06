@@ -1,91 +1,89 @@
-import { OperatorType } from "../../entities/tokens/OperatorType";
-import { EnhancedCalculator } from "./EnhancedCalculator";
-import { ICalculator } from "./ICalculator";
+import { CalculatorModel } from "../../entities/calculator/CalculatorModel";
+import { CalculatorMode } from "../../entities/calculator/CalculatorState";
 
 type Listener = () => void;
 
+/**
+ * 계산기 UI 상태 관리를 위한 스토어
+ */
 class CalculatorStore {
-  private calculator: ICalculator;
+  private model: CalculatorModel;
   private listeners: Set<Listener> = new Set();
-
-  private result: number | null = null; // 캐시된 결과
   private lastSnapshot: { expression: string; result: number | null } | null =
-    null; // 마지막 스냅샷
+    null;
 
   constructor() {
-    this.calculator = new EnhancedCalculator();
+    this.model = new CalculatorModel();
   }
 
+  /**
+   * 상태 변경 리스너 등록
+   */
   subscribe = (listener: Listener) => {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   };
 
+  /**
+   * 현재 상태 스냅샷 반환
+   */
   getSnapshot = () => {
-    const expression = this.calculator.getExpression();
+    const state = this.model.getState();
 
-    // 이전 스냅샷과 동일하면 기존 객체 반환
+    // 이전 스냅샷과 동일하면 기존 객체 반환 (성능 최적화)
     if (
       this.lastSnapshot &&
-      this.lastSnapshot.expression === expression &&
-      this.lastSnapshot.result === this.result
+      this.lastSnapshot.expression === state.expression &&
+      this.lastSnapshot.result === state.result
     ) {
       return this.lastSnapshot;
     }
 
     // 새로운 스냅샷 생성 및 캐싱
     this.lastSnapshot = {
-      expression,
-      result: this.result,
+      expression: state.expression,
+      result: state.result,
     };
     return this.lastSnapshot;
   };
 
-  private notify() {
+  /**
+   * 리스너에 상태 변경 알림
+   */
+  private notify(): void {
     this.listeners.forEach((listener) => listener());
   }
 
-  input(value: string) {
-    if (!isNaN(Number(value))) {
-      this.calculator.inputNumber(value);
-    } else if (value === "(" || value === ")") {
-      this.calculator.inputParenthesis(value);
-    } else if (Object.values(OperatorType).includes(value as OperatorType)) {
-      // 계산 후 연산자 입력 시 이전 결과를 유지
-      this.calculator.inputOperator(value);
-    }
+  /**
+   * 통합 입력 처리 - 모든 입력 타입을 단일 메서드로 처리
+   */
+  input(value: string): void {
+    this.model.input(value);
     this.notify();
   }
 
-  clear() {
-    this.calculator.clearAll();
-    this.result = null;
+  /**
+   * 수식 계산
+   */
+  calculate(): void {
+    this.model.calculate();
     this.notify();
   }
 
-  backspace() {
-    // 계산 결과가 있는 경우(this.result가 non-null) 결과 값을 유지
-    const hadResult = this.result !== null;
-
-    this.calculator.undo();
-
-    // 계산 후 첫 백스페이스는 결과를 유지
-    if (!hadResult) {
-      this.result = null;
-    }
-
+  /**
+   * 모든 상태 초기화
+   */
+  clear(): void {
+    this.model.clearAll();
     this.notify();
   }
 
-  calculate() {
-    try {
-      this.result = this.calculator.evaluate(); // 계산 결과를 캐시에 저장
-      this.notify();
-    } catch (error) {
-      console.error("Calculation error:", error);
-      this.result = null;
-      this.notify();
-    }
+  /**
+   * 백스페이스 처리
+   */
+  backspace(): void {
+    this.model.backspace();
+    this.notify();
   }
 }
 

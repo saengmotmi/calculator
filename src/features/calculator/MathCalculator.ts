@@ -9,11 +9,12 @@ import {
   isOperatorToken,
 } from "../../entities/tokens/Token";
 import { Operator, OperatorType } from "../../entities/tokens/Operator";
+import { ICalculator } from "./ICalculator";
 
 /**
  * 계산기 클래스: 수식 처리와 계산을 담당
  */
-export class MathCalculator {
+export class MathCalculator implements ICalculator {
   private inputHistory: string[] = [];
   private currentInput: string = "";
   private previousResult: number | null = null;
@@ -35,10 +36,12 @@ export class MathCalculator {
   /**
    * 연산자 입력 처리
    */
-  inputOperator(value: OperatorType): void {
+  inputOperator(value: string | OperatorType): void {
+    const opValue = value as OperatorType;
+
     // 음수 처리: '-'가 표현식 시작이거나 연산자/괄호 다음에 오는 경우
     if (
-      value === OperatorType.MINUS &&
+      opValue === OperatorType.MINUS &&
       (this.inputHistory.length === 0 ||
         this.isLastTokenOperator() ||
         this.isLastTokenLeftParenthesis())
@@ -58,12 +61,15 @@ export class MathCalculator {
     } else if (this.previousResult !== null && this.inputHistory.length === 0) {
       // 이전 결과를 현재 수식의 시작으로 사용
       this.inputHistory.push(`${this.previousResult}`);
-    } else if (this.inputHistory.length === 0 && value !== OperatorType.MINUS) {
+    } else if (
+      this.inputHistory.length === 0 &&
+      opValue !== OperatorType.MINUS
+    ) {
       // 수식이 비어있는데 연산자가 오면 0을 먼저 추가 (단, 음수는 제외)
       this.inputHistory.push("0");
     }
 
-    this.inputHistory.push(value);
+    this.inputHistory.push(opValue);
   }
 
   /**
@@ -73,6 +79,15 @@ export class MathCalculator {
     if (this.currentInput) {
       this.inputHistory.push(this.currentInput);
       this.currentInput = "";
+    }
+
+    // 암시적 곱셈 처리 - 숫자 뒤에 왼쪽 괄호가 오는 경우
+    if (paren === "(" && this.inputHistory.length > 0) {
+      const lastToken = this.inputHistory[this.inputHistory.length - 1];
+      // 숫자나 오른쪽 괄호 다음에 왼쪽 괄호가 오면 곱셈 추가
+      if (!this.isLastTokenOperator() && lastToken !== "(") {
+        this.inputHistory.push(OperatorType.MULTIPLY);
+      }
     }
 
     this.inputHistory.push(paren);
@@ -96,9 +111,11 @@ export class MathCalculator {
     try {
       // 수식 문자열 생성
       const expression = this.inputHistory.join(" ");
+      console.log("Evaluating expression:", expression);
 
       // 파싱 및 평가
       const result = this.parser.parse(expression);
+      console.log("Calculation result:", result);
 
       // 결과 저장 및 초기화
       this.previousResult = result;
@@ -107,7 +124,16 @@ export class MathCalculator {
       return result;
     } catch (error) {
       console.error("Calculation error:", error);
-      // 오류 발생 시 이전 상태 유지
+
+      // Division by zero 예외 다시 throw
+      if (
+        error instanceof Error &&
+        error.message.includes("Division by zero")
+      ) {
+        throw error;
+      }
+
+      // 다른 오류는 이전 상태 유지
       return this.previousResult ?? 0;
     }
   }

@@ -7,8 +7,9 @@ import {
   BasicMathEvaluator,
   OPERATORS,
 } from "../../entities/evaluators/basicMath";
+import { ICalculator } from "./ICalculator";
 
-export class BasicMathCalculator {
+export class BasicMathCalculator implements ICalculator {
   private inputHistory: string[] = [];
   private currentInput: string = "";
   private previousResult: number | null = null; // 마지막 계산 결과 저장
@@ -24,7 +25,20 @@ export class BasicMathCalculator {
     }
   }
 
-  inputOperator(operator: OPERATORS) {
+  inputOperator(operator: string) {
+    // OPERATORS 타입으로 캐스팅
+    const op = operator as OPERATORS;
+
+    // 음수 처리: 연산자가 '-'이고 입력 내용이 없으면 음수 모드 활성화
+    if (
+      op === OPERATORS.MINUS &&
+      this.currentInput === "" &&
+      this.inputHistory.length === 0
+    ) {
+      this.isNegative = true;
+      return;
+    }
+
     if (this.currentInput) {
       // 현재 입력된 숫자를 inputHistory에 추가하고 초기화
       this.inputHistory.push(this.currentInput);
@@ -35,21 +49,25 @@ export class BasicMathCalculator {
     }
 
     // 연산자를 inputHistory에 추가
-    this.inputHistory.push(`${operator}`);
+    this.inputHistory.push(`${op}`);
   }
 
-  inputParenthesis(paren: PAREN) {
+  inputParenthesis(paren: string) {
+    // PAREN 타입으로 캐스팅
+    const p = paren as PAREN;
+
     if (this.currentInput) {
       this.inputHistory.push(this.currentInput);
       this.currentInput = "";
     }
-    if (paren === PAREN.LEFT && this.inputHistory.length > 0) {
+    if (p === PAREN.LEFT && this.inputHistory.length > 0) {
       const lastInput = this.inputHistory[this.inputHistory.length - 1];
-      if (!isNaN(Number(lastInput))) {
+      // 숫자나 오른쪽 괄호 다음에 왼쪽 괄호가 오면 곱셈 추가
+      if (!isNaN(Number(lastInput)) || lastInput === PAREN.RIGHT) {
         this.inputHistory.push(OPERATORS.MULTIPLY);
       }
     }
-    this.inputHistory.push(paren);
+    this.inputHistory.push(p);
   }
 
   // 현재 수식만 초기화하고, 이전 결과는 유지
@@ -79,14 +97,33 @@ export class BasicMathCalculator {
       this.currentInput = "";
     }
 
-    const expression = this.inputHistory.join(" ");
-    const calculator = BasicMathCalculatorFactory.create(expression.trim());
-    const result = calculator.evaluate();
+    if (this.inputHistory.length === 0) {
+      return 0;
+    }
 
-    this.previousResult = result; // 마지막 결과를 저장
-    this.clearExpression(); // 수식 초기화 (하지만 이전 결과는 유지)
+    try {
+      const expression = this.inputHistory.join(" ");
+      const calculator = BasicMathCalculatorFactory.create(expression.trim());
+      const result = calculator.evaluate();
 
-    return result;
+      this.previousResult = result; // 마지막 결과를 저장
+      this.clearExpression(); // 수식 초기화 (하지만 이전 결과는 유지)
+
+      return result;
+    } catch (error) {
+      console.error("Calculation error:", error);
+
+      // Division by zero 예외 다시 throw
+      if (
+        error instanceof Error &&
+        error.message.includes("Division by zero")
+      ) {
+        throw error;
+      }
+
+      // 다른 오류는 이전 상태 유지
+      return this.previousResult ?? 0;
+    }
   }
 
   getExpression() {

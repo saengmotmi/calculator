@@ -51,6 +51,7 @@ class CalculatorStore {
     } else if (value === "(" || value === ")") {
       this.calculator.inputParenthesis(value);
     } else if (Object.values(OperatorType).includes(value as OperatorType)) {
+      // 계산 후 연산자 입력 시 이전 결과를 유지
       this.calculator.inputOperator(value);
     }
     this.notify();
@@ -63,8 +64,16 @@ class CalculatorStore {
   }
 
   backspace() {
+    // 계산 결과가 있는 경우(this.result가 non-null) 결과 값을 유지
+    const hadResult = this.result !== null;
+
     this.calculator.undo();
-    this.result = null;
+
+    // 계산 후 첫 백스페이스는 결과를 유지
+    if (!hadResult) {
+      this.result = null;
+    }
+
     this.notify();
   }
 

@@ -50,8 +50,6 @@ export interface CalculatorState {
     type: CalculatorErrorType;
     details: string;
   } | null;
-  /** 표시 모드 (표시 로직에 영향) */
-  displayMode?: "AUTO" | "EMPTY" | "ZERO";
 }
 
 /**
@@ -63,5 +61,4 @@ export const initialCalculatorState: CalculatorState = {
   result: null,
   mode: CalculatorMode.INPUT,
   error: null,
-  displayMode: "AUTO",
 };

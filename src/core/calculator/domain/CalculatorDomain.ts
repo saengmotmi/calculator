@@ -348,47 +348,37 @@ export function evaluateExpression(state: CalculatorState): CalculatorState {
  * 백스페이스 처리
  */
 export function applyBackspace(state: CalculatorState): CalculatorState {
-  // 에러 상태에서는 모든 것을 초기화
+  // 1. 에러 상태에서는 초기 상태로 리셋
   if (state.mode === CalculatorMode.ERROR) {
     return initialCalculatorState;
   }
 
-  // 결과 상태에서는 결과를 유지하되 입력 모드로 전환
+  // 2. 결과 상태에서는 결과를 첫 토큰으로 변환하고 입력 모드로 전환
   if (state.mode === CalculatorMode.RESULT) {
     const result = state.result;
     return {
       tokens: result !== null ? [createNumberToken(result.toString())] : [],
       currentInput: "",
-      result: null, // 계산 결과 상태에서 벗어남
-      mode: CalculatorMode.INPUT, // 입력 모드로 전환
+      result: null,
+      mode: CalculatorMode.INPUT,
       error: null,
     };
   }
 
-  // 현재 입력이 있으면 마지막 문자 제거
-  if (state.currentInput) {
+  // 3. 현재 입력이 있는 경우: 마지막 문자 제거
+  if (state.currentInput.length > 0) {
     const newInput = state.currentInput.slice(0, -1);
-    // 한 자리 숫자를 지울 때 처리
-    if (state.currentInput.length === 1 && state.tokens.length === 0) {
-      // 한 자리 숫자가 지워지면 0으로 표시되도록 설정
-      return {
-        ...state,
-        currentInput: "",
-        displayMode: "ZERO", // 0으로 표시
-      };
-    }
-
     return {
       ...state,
       currentInput: newInput,
     };
   }
 
-  // 토큰이 있으면 마지막 토큰 제거
+  // 4. 토큰이 있는 경우: 마지막 토큰 처리
   if (state.tokens.length > 0) {
     const lastToken = state.tokens[state.tokens.length - 1];
 
-    // 마지막 토큰이 숫자이고 두 자리 이상인 경우 마지막 숫자만 제거
+    // 4.1 숫자 토큰이고 두 자리 이상인 경우: 마지막 자릿수 제거
     if (lastToken.type === "NUMBER" && lastToken.value.length > 1) {
       const newValue = lastToken.value.slice(0, -1);
       return {
@@ -400,30 +390,14 @@ export function applyBackspace(state: CalculatorState): CalculatorState {
       };
     }
 
-    // 마지막 토큰이 숫자이고 한 자리 숫자인 경우
-    // 토큰이 하나만 있으면 삭제 후 0 표시
-    if (lastToken.type === "NUMBER" && lastToken.value.length === 1) {
-      if (state.tokens.length === 1) {
-        return {
-          ...state,
-          tokens: [],
-          displayMode: "ZERO", // 0으로 표시
-        };
-      }
-
-      return {
-        ...state,
-        tokens: state.tokens.slice(0, -1),
-      };
-    }
-
+    // 4.2 그 외의 경우: 토큰 자체를 제거
     return {
       ...state,
       tokens: state.tokens.slice(0, -1),
     };
   }
 
-  // 아무것도 없으면 초기 상태 유지
+  // 5. 이미 비어있는 상태면 그대로 유지
   return state;
 }
 
@@ -440,51 +414,39 @@ export function clearExpression(state: CalculatorState): CalculatorState {
 }
 
 /**
- * 상태를 문자열로 변환 (디버깅용)
+ * 상태를 문자열로 변환
+ * 순수하게 상태 내용을 문자열로 표현합니다.
  */
 export function stateToString(state: CalculatorState): string {
-  // 에러 상태이면 에러 메시지 반환
+  // 에러 상태인 경우 에러 메시지 반환
   if (state.mode === CalculatorMode.ERROR && state.error) {
     return `Error: ${state.error.details}`;
   }
 
-  // 결과 상태이면 결과 값 반환
+  // 결과 상태인 경우 결과값 반환
   if (state.mode === CalculatorMode.RESULT && state.result !== null) {
     return state.result.toString();
   }
 
-  // 토큰에 결과가 있으면 표시 (백스페이스 후 결과 유지)
-  if (
-    state.tokens.length === 1 &&
-    state.tokens[0].type === "NUMBER" &&
-    !state.currentInput
-  ) {
-    return state.tokens[0].value;
-  }
-
-  // 특정 표시 모드 처리
-  if (state.displayMode === "ZERO") {
+  // 빈 상태(토큰과 입력이 없는 경우) "0" 반환
+  if (state.tokens.length === 0 && state.currentInput === "") {
     return "0";
   }
 
-  if (state.displayMode === "EMPTY") {
-    return "";
-  }
+  // 입력 상태에서는 토큰과 현재 입력을 결합
+  let expression = "";
 
-  // 빈 상태 처리 (토큰과 입력이 없는 경우)
-  if (state.tokens.length === 0 && state.currentInput === "") {
-    return "0"; // 기본적으로 0 표시
+  // 토큰이 있으면 토큰 문자열 구성
+  if (state.tokens.length > 0) {
+    expression = state.tokens.map((token) => token.value).join(" ");
   }
-
-  // 토큰과 현재 입력을 문자열로 변환
-  let expressionStr = state.tokens.map((token) => token.value).join(" ");
 
   // 현재 입력이 있으면 추가
   if (state.currentInput) {
-    expressionStr = expressionStr
-      ? `${expressionStr} ${state.currentInput}`
+    expression = expression
+      ? `${expression} ${state.currentInput}`
       : state.currentInput;
   }
 
-  return expressionStr || "0";
+  return expression;
 }

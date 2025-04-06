@@ -53,7 +53,6 @@ class CalculatorStore {
     } else if (Object.values(OperatorType).includes(value as OperatorType)) {
       this.calculator.inputOperator(value);
     }
-    this.result = null; // 새로운 입력이 있을 때 결과를 초기화
     this.notify();
   }
 

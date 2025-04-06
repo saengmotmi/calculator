@@ -168,6 +168,12 @@ export class Expression {
         ? `${tokensStr} ${this.currentInput}`
         : this.currentInput;
     }
+
+    // 토큰이 없고 이전 결과가 있으면 이전 결과를 표시
+    if (!tokensStr && this.previousResult !== null) {
+      return this.previousResult.toString();
+    }
+
     return tokensStr || "0"; // 빈 경우 "0" 반환
   }
 
@@ -195,5 +201,20 @@ export class Expression {
    */
   hasCurrentInput(): boolean {
     return this.currentInput.length > 0;
+  }
+
+  /**
+   * 이전 결과를 새 수식의 시작으로 사용한 Expression을 반환합니다.
+   */
+  withPreviousResultAsStart(): Expression {
+    if (this.previousResult === null) {
+      return this;
+    }
+
+    return new Expression(
+      [new NumberToken(this.previousResult.toString())],
+      "",
+      null
+    );
   }
 }

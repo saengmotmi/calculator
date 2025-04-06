@@ -26,6 +26,11 @@ export class MathCalculator implements ICalculator {
    * 숫자 입력 처리
    */
   inputNumber(value: string | number): void {
+    // 계산 후 숫자 입력 시 새 연산 시작(이전 결과 초기화)
+    if (this.shouldUseResultAsStart()) {
+      this.clearExpression();
+    }
+
     const operation = new NumberInputOperation(`${value}`);
     this.expression = operation.apply(this.expression);
   }
@@ -34,14 +39,39 @@ export class MathCalculator implements ICalculator {
    * 연산자 입력 처리
    */
   inputOperator(value: string | OperatorType): void {
+    // 계산 후 연산자 입력 시 이전 결과를 활용
+    if (this.shouldUseResultAsStart()) {
+      this.expression = this.expression.withPreviousResultAsStart();
+    }
+
     const operation = new OperatorInputOperation(value as string);
     this.expression = operation.apply(this.expression);
+  }
+
+  /**
+   * 이전 결과를 시작점으로 사용해야 하는지 확인
+   */
+  private shouldUseResultAsStart(): boolean {
+    return (
+      (this.expression.toString() === "0" ||
+        this.expression.getTokens().length === 0) &&
+      this.previousResult !== null
+    );
   }
 
   /**
    * 괄호 입력 처리
    */
   inputParenthesis(paren: string): void {
+    // 계산 후 괄호 입력 시 적절히 처리
+    if (paren === "(" && this.shouldUseResultAsStart()) {
+      // 열린 괄호는 새 연산 시작
+      this.clearExpression();
+    } else if (paren === ")" && this.shouldUseResultAsStart()) {
+      // 닫힌 괄호는 이전 결과를 활용
+      this.expression = this.expression.withPreviousResultAsStart();
+    }
+
     const operation = new ParenthesisInputOperation(paren);
     this.expression = operation.apply(this.expression);
   }
@@ -64,8 +94,8 @@ export class MathCalculator implements ICalculator {
       // 결과 저장
       this.previousResult = result;
 
-      // 계산 수행 후 식을 초기화하고 결과를 저장
-      this.expression = this.expression.withCalculationResult(result);
+      // 수식 초기화 및 결과 저장
+      this.expression = new Expression([], "", result);
 
       return result;
     } catch (error) {

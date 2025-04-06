@@ -40,9 +40,20 @@ export class BasicMathEvaluator implements Evaluator {
   tokenizeExpression(expression: string) {
     const isBasicMathTokenRegex = /(\d+|\+|\-|\*|\/|\(|\))/;
 
-    return expression
+    const tokens = expression
       .split(isBasicMathTokenRegex)
       .map((token) => token.trim())
       .filter((token) => token.length > 0);
+
+    const result: string[] = [];
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i];
+      result.push(token);
+      if (i < tokens.length - 1 && !isNaN(Number(token)) && tokens[i + 1] === "(") {
+        result.push(OPERATORS.MULTIPLY);
+      }
+    }
+
+    return result;
   }
 }

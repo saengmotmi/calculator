@@ -106,4 +106,28 @@ describe("기본 사칙연산 계산기 기능", () => {
 
     expect(() => calculator.evaluate()).toThrow("Division by zero");
   });
+
+  it("숫자 뒤에 괄호를 입력하면 곱셈으로 간주한다", () => {
+    const calculator = new BasicMathCalculator();
+    // "2 ( 3 + 4 )";
+    calculator.inputNumber(2);
+    calculator.inputParenthesis("(");
+    calculator.inputNumber(3);
+    calculator.inputOperator("+");
+    calculator.inputNumber(4);
+    calculator.inputParenthesis(")");
+
+    expect(calculator.evaluate()).toBe(14);
+  });
+
+  it("숫자 뒤에 괄호를 입력하고 곧바로 엔터를 누르면 연산이 안된다", () => {
+    const calculator = new BasicMathCalculator();
+    // "123 ( 123 )"
+    calculator.inputNumber(123);
+    calculator.inputParenthesis("(");
+    calculator.inputNumber(123);
+    calculator.inputParenthesis(")");
+
+    expect(calculator.evaluate()).toBe(123 * 123);
+  });
 });

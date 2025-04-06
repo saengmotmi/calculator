@@ -14,10 +14,13 @@ export class Infix implements Notation {
     const operators: string[] = [];
     const tokens = this.evaluator.tokenizeExpression(this.expression);
 
-    tokens.forEach((token) => {
+    tokens.forEach((token, index) => {
       if (this.isNumber(token)) {
         values.push(Number(token));
       } else if (this.isLeftParenthesis(token)) {
+        if (index > 0 && this.isNumber(tokens[index - 1])) {
+          operators.push(OPERATORS.MULTIPLY);
+        }
         operators.push(token);
       } else if (this.isRightParenthesis(token)) {
         this.manager.processUntilLeftParenthesis(values, operators);
@@ -40,10 +43,13 @@ export class Infix implements Notation {
     const operators: string[] = [];
     const tokens = this.evaluator.tokenizeExpression(this.expression);
 
-    tokens.forEach((token) => {
+    tokens.forEach((token, index) => {
       if (this.isNumber(token)) {
         output.push(token);
       } else if (this.isLeftParenthesis(token)) {
+        if (index > 0 && this.isNumber(tokens[index - 1])) {
+          operators.push(OPERATORS.MULTIPLY);
+        }
         operators.push(token);
       } else if (this.isRightParenthesis(token)) {
         this.manager.transferUntilLeftParenthesis(output, operators);

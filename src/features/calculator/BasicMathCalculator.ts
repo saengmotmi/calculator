@@ -43,6 +43,12 @@ export class BasicMathCalculator {
       this.inputHistory.push(this.currentInput);
       this.currentInput = "";
     }
+    if (paren === PAREN.LEFT && this.inputHistory.length > 0) {
+      const lastInput = this.inputHistory[this.inputHistory.length - 1];
+      if (!isNaN(Number(lastInput))) {
+        this.inputHistory.push(OPERATORS.MULTIPLY);
+      }
+    }
     this.inputHistory.push(paren);
   }
 

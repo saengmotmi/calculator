@@ -1,15 +1,20 @@
-import { OPERATORS } from "../../entities/evaluators/basicMath";
-import { BasicMathCalculator } from "./BasicMathCalculator";
+import { OperatorType } from "../../entities/tokens/Operator";
+import { EnhancedCalculator } from "./EnhancedCalculator";
+import { ICalculator } from "./ICalculator";
 
 type Listener = () => void;
 
 class CalculatorStore {
-  private calculator = new BasicMathCalculator();
+  private calculator: ICalculator;
   private listeners: Set<Listener> = new Set();
 
   private result: number | null = null; // 캐시된 결과
   private lastSnapshot: { expression: string; result: number | null } | null =
     null; // 마지막 스냅샷
+
+  constructor() {
+    this.calculator = new EnhancedCalculator();
+  }
 
   subscribe = (listener: Listener) => {
     this.listeners.add(listener);
@@ -45,8 +50,8 @@ class CalculatorStore {
       this.calculator.inputNumber(value);
     } else if (value === "(" || value === ")") {
       this.calculator.inputParenthesis(value);
-    } else if (Object.values(OPERATORS).includes(value as OPERATORS)) {
-      this.calculator.inputOperator(value as OPERATORS);
+    } else if (Object.values(OperatorType).includes(value as OperatorType)) {
+      this.calculator.inputOperator(value);
     }
     this.result = null; // 새로운 입력이 있을 때 결과를 초기화
     this.notify();

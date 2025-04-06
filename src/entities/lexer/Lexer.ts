@@ -1,10 +1,11 @@
+import { Operator } from "../tokens/Operator";
+import { isValidOperator } from "../tokens/OperatorType";
 import {
   Token,
   NumberToken,
   LeftParenToken,
   RightParenToken,
 } from "../tokens/Token";
-import { Operator, isValidOperator, OperatorType } from "../tokens/Operator";
 
 /**
  * 렉서 클래스: 문자열을 토큰으로 변환

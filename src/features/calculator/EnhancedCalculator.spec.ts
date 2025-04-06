@@ -174,4 +174,27 @@ describe("향상된 계산기 기능", () => {
 
     expect(calculator.evaluate()).toBe(-41);
   });
+
+  it("연속된 계산을 수행할 수 있다", () => {
+    const calculator = new EnhancedCalculator();
+
+    // 첫 번째 계산: 2 + 3 = 5
+    calculator.inputNumber(2);
+    calculator.inputOperator("+");
+    calculator.inputNumber(3);
+
+    expect(calculator.evaluate()).toBe(5);
+
+    // 결과에 이어서 계산: 5 + 7 = 12
+    calculator.inputOperator("+");
+    calculator.inputNumber(7);
+
+    expect(calculator.evaluate()).toBe(12);
+
+    // 다시 결과에 이어서 계산: 12 * 2 = 24
+    calculator.inputOperator("*");
+    calculator.inputNumber(2);
+
+    expect(calculator.evaluate()).toBe(24);
+  });
 });

@@ -1,14 +1,14 @@
 import * as Buttons from "./types";
+import React from "react";
 
-interface ButtonProps {
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   label: string;
-  onClick: () => void;
 }
 
-export const Button = ({ label, onClick }: ButtonProps) => {
+export const Button = ({ label, ...props }: ButtonProps) => {
   return (
     <button
-      onClick={onClick}
+      {...props}
       style={{
         padding: "15px",
         fontSize: "18px",
@@ -16,6 +16,7 @@ export const Button = ({ label, onClick }: ButtonProps) => {
         border: "1px solid #ddd",
         backgroundColor: "#f5f5f5",
         transition: "background-color 0.3s",
+        ...props.style,
       }}
     >
       {label}

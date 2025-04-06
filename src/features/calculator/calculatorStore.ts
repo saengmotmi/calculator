@@ -1,4 +1,4 @@
-import { OperatorType } from "../../entities/tokens/Operator";
+import { OperatorType } from "../../entities/tokens/OperatorType";
 import { EnhancedCalculator } from "./EnhancedCalculator";
 import { ICalculator } from "./ICalculator";
 

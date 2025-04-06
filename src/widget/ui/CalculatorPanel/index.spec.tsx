@@ -11,9 +11,8 @@ beforeEach(() => {
 describe("CalculatorPanel 컴포넌트", () => {
   it("초기 렌더링에서 결과가 0으로 표시된다", () => {
     render(<CalculatorPanel />);
-    const display = screen.getByRole("display");
-    const resultDisplay = within(display).getByText("0");
-    expect(resultDisplay).toBeInTheDocument();
+    const resultDisplay = screen.getByTestId("result-display");
+    expect(resultDisplay).toHaveTextContent("0");
   });
 
   it("숫자 버튼을 클릭하면 식에 숫자가 추가된다", () => {
@@ -85,9 +84,8 @@ describe("CalculatorPanel 컴포넌트", () => {
     fireEvent.click(button1);
     fireEvent.click(clearButton);
 
-    const display = screen.getByRole("display");
-    const expressionDisplay = within(display).getByText("0");
-    expect(expressionDisplay).toBeInTheDocument();
+    const expressionDisplay = screen.getByTestId("expression-display");
+    expect(expressionDisplay).toHaveTextContent("0");
   });
 
   it("뒤로 가기 버튼이 클릭되면 마지막 입력이 삭제된다", () => {
@@ -254,13 +252,105 @@ describe("CalculatorPanel 컴포넌트 - 키보드 입력 테스트", () => {
   it("Escape 키로 계산기를 초기화할 수 있다", () => {
     render(<CalculatorPanel />);
 
-    // "1", "2", "Escape" 키 입력
+    // 숫자 1 입력
     fireEvent.keyDown(window, { key: "1" });
-    fireEvent.keyDown(window, { key: "2" });
+
+    // Escape 키 입력
     fireEvent.keyDown(window, { key: "Escape" });
 
+    const expressionDisplay = screen.getByTestId("expression-display");
+    expect(expressionDisplay).toHaveTextContent("0");
+  });
+});
+
+describe("CalculatorPanel 컴포넌트 - 백스페이스 기능", () => {
+  it("숫자 입력 중에 백스페이스를 누르면 마지막 숫자가 삭제된다", () => {
+    render(<CalculatorPanel />);
+
+    const button1 = screen.getByText("1");
+    const button2 = screen.getByText("2");
+    const button3 = screen.getByText("3");
+    const backspaceButton = screen.getByText("←");
+
+    fireEvent.click(button1);
+    fireEvent.click(button2);
+    fireEvent.click(button3);
+
+    fireEvent.click(backspaceButton);
+
     const display = screen.getByRole("display");
-    const expressionDisplay = within(display).getByText("0");
+    const expressionDisplay = within(display).getByText("12");
+    expect(expressionDisplay).toBeInTheDocument();
+
+    fireEvent.click(backspaceButton);
+
+    const updatedDisplay = screen.getByRole("display");
+    const updatedExpressionDisplay = within(updatedDisplay).getByText("1");
+    expect(updatedExpressionDisplay).toBeInTheDocument();
+  });
+
+  it("연산자 입력 후 백스페이스를 누르면 연산자가 삭제된다", () => {
+    render(<CalculatorPanel />);
+
+    const button1 = screen.getByText("1");
+    const plusButton = screen.getByText("+");
+    const backspaceButton = screen.getByText("←");
+
+    fireEvent.click(button1);
+    fireEvent.click(plusButton);
+
+    fireEvent.click(backspaceButton);
+
+    const display = screen.getByRole("display");
+    const expressionDisplay = within(display).getByText("1");
+    expect(expressionDisplay).toBeInTheDocument();
+  });
+
+  it("복잡한 수식에서 백스페이스를 여러번 누르면 입력 순서의 역순으로 삭제된다", () => {
+    render(<CalculatorPanel />);
+
+    const button1 = screen.getByText("1");
+    const button2 = screen.getByText("2");
+    const plusButton = screen.getByText("+");
+    const button3 = screen.getByText("3");
+    const backspaceButton = screen.getByText("←");
+
+    fireEvent.click(button1);
+    fireEvent.click(button2);
+    fireEvent.click(plusButton);
+    fireEvent.click(button3);
+
+    // "12 + 3" 상태에서 백스페이스를 누르면 "12 +"가 됨
+    fireEvent.click(backspaceButton);
+    const expressionDisplay = screen.getByTestId("expression-display");
+    expect(expressionDisplay).toHaveTextContent("12 +");
+
+    // "12 +" 상태에서 백스페이스를 누르면 "12"가 됨
+    fireEvent.click(backspaceButton);
+    expect(expressionDisplay).toHaveTextContent("12");
+
+    // "12" 상태에서 백스페이스를 누르면 마지막 숫자가 삭제됨
+    fireEvent.click(backspaceButton);
+    expect(expressionDisplay).toHaveTextContent("1");
+
+    // "1" 상태에서 백스페이스를 누르면 "0"이 됨
+    fireEvent.click(backspaceButton);
+    expect(expressionDisplay).toHaveTextContent("0");
+  });
+
+  it("키보드 Backspace 키를 눌러도 마지막 입력이 삭제된다", () => {
+    render(<CalculatorPanel />);
+
+    // "1", "2", "3" 키 입력
+    fireEvent.keyDown(window, { key: "1" });
+    fireEvent.keyDown(window, { key: "2" });
+    fireEvent.keyDown(window, { key: "3" });
+
+    // Backspace 키 입력
+    fireEvent.keyDown(window, { key: "Backspace" });
+
+    const display = screen.getByRole("display");
+    const expressionDisplay = within(display).getByText("12");
     expect(expressionDisplay).toBeInTheDocument();
   });
 });

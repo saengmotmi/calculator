@@ -6,7 +6,8 @@ import {
   isRightParenToken,
   isOperatorToken,
 } from "../tokens/Token";
-import { Operator, OperatorType } from "../tokens/Operator";
+import { Operator } from "../tokens/Operator";
+import { OperatorType } from "../tokens/OperatorType";
 
 /**
  * 표현식 전처리기 클래스: 특수 케이스를 처리

@@ -13,8 +13,18 @@ const Display = ({ expression, result }: DisplayProps) => {
         border: "1px solid #ddd",
       }}
     >
-      <div style={{ fontSize: "24px", marginBottom: "5px" }}>{expression}</div>
-      <div style={{ fontSize: "32px", color: "#000" }}>{result}</div>
+      <div
+        data-testid="expression-display"
+        style={{ fontSize: "24px", marginBottom: "5px" }}
+      >
+        {expression}
+      </div>
+      <div
+        data-testid="result-display"
+        style={{ fontSize: "32px", color: "#000" }}
+      >
+        {result}
+      </div>
     </div>
   );
 };

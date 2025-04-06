@@ -24,11 +24,6 @@ export interface Token {
    * @returns 변형된 토큰 또는 null (토큰을 삭제해야 할 경우)
    */
   transform(transformer: (value: string) => string | null): Token | null;
-
-  /**
-   * 이 토큰이 연산자인지 확인
-   */
-  isOperator(): boolean;
 }
 
 /**
@@ -49,10 +44,6 @@ export abstract class BaseToken implements Token {
   abstract transform(
     transformer: (value: string) => string | null
   ): Token | null;
-
-  isOperator(): boolean {
-    return false;
-  }
 }
 
 /**
@@ -83,10 +74,6 @@ export class NumberToken extends BaseToken {
     }
     return new NumberToken(newValue, this.position);
   }
-
-  isOperator(): boolean {
-    return false;
-  }
 }
 
 /**
@@ -106,10 +93,6 @@ export class OperatorToken extends BaseToken {
       return this;
     }
     return new OperatorToken(newValue, this.position);
-  }
-
-  isOperator(): boolean {
-    return true;
   }
 }
 
@@ -131,10 +114,6 @@ export class LeftParenToken extends BaseToken {
     }
     return null; // 괄호는 변형될 수 없음
   }
-
-  isOperator(): boolean {
-    return false;
-  }
 }
 
 /**
@@ -155,10 +134,6 @@ export class RightParenToken extends BaseToken {
     }
     return null; // 괄호는 변형될 수 없음
   }
-
-  isOperator(): boolean {
-    return false;
-  }
 }
 
 /**
@@ -175,30 +150,3 @@ export const isLeftParenToken = (token: Token): token is LeftParenToken =>
 
 export const isRightParenToken = (token: Token): token is RightParenToken =>
   token.type === TokenType.RIGHT_PAREN;
-
-// 정적 메서드 추가를 위한 네임스페이스
-export namespace Token {
-  /**
-   * 연산자 토큰 생성
-   */
-  export function createOperator(op: string): OperatorToken | null {
-    if (Object.values(OperatorType).includes(op as OperatorType)) {
-      return new OperatorToken(op as OperatorType, undefined);
-    }
-    return null;
-  }
-
-  /**
-   * 괄호 토큰 생성
-   */
-  export function createParenthesis(
-    paren: string
-  ): LeftParenToken | RightParenToken | null {
-    if (paren === "(") {
-      return new LeftParenToken();
-    } else if (paren === ")") {
-      return new RightParenToken();
-    }
-    return null;
-  }
-}

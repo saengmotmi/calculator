@@ -63,21 +63,3 @@ export class ClearOperation implements EditOperation {
     return expression.cleared();
   }
 }
-
-/**
- * 계산 작업: 수식을 평가하고 결과를 반환합니다.
- */
-export class CalculateOperation implements EditOperation {
-  constructor(private calculator: (tokens: any[]) => number) {}
-
-  apply(expression: Expression): Expression {
-    try {
-      const tokens = expression.getTokens();
-      const result = this.calculator(tokens);
-      return expression.withCalculationResult(result);
-    } catch (error) {
-      console.error("Calculation error:", error);
-      return expression; // 오류 시 원래 수식 유지
-    }
-  }
-}

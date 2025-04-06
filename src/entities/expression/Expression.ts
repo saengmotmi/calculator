@@ -67,7 +67,7 @@ export class Expression {
   withOperatorInput(operator: string): Expression {
     if (this.currentInput) {
       // 현재 입력 중인 숫자가 있으면 토큰으로 변환 후 연산자 추가
-      const newTokens = [...this.tokens, new NumberToken(this.currentInput)];
+      const newTokens = this.addTokenWithCurrentInput();
 
       // 유효한 연산자인지 확인
       if (Object.values(OperatorType).includes(operator as OperatorType)) {
@@ -107,29 +107,34 @@ export class Expression {
    * 괄호가 추가된 Expression을 반환합니다.
    */
   withParenthesisInput(paren: string): Expression {
+    let newTokens: Token[];
+
     if (this.currentInput) {
-      // 현재 입력 중인 숫자가 있으면 토큰으로 변환 후 괄호 추가
-      const newTokens = [...this.tokens, new NumberToken(this.currentInput)];
-
-      if (paren === "(") {
-        newTokens.push(new LeftParenToken());
-      } else if (paren === ")") {
-        newTokens.push(new RightParenToken());
-      }
-
-      return new Expression(newTokens, "", this.previousResult);
+      // 현재 입력 중인 숫자가 있으면 토큰으로 변환 후 토큰 추가
+      newTokens = this.addTokenWithCurrentInput();
     } else {
-      // 괄호 직접 추가
-      const newTokens = [...this.tokens];
-
-      if (paren === "(") {
-        newTokens.push(new LeftParenToken());
-      } else if (paren === ")") {
-        newTokens.push(new RightParenToken());
-      }
-
-      return new Expression(newTokens, "", this.previousResult);
+      // 토큰 직접 추가
+      newTokens = [...this.tokens];
     }
+
+    if (paren === "(") {
+      newTokens.push(new LeftParenToken());
+    } else if (paren === ")") {
+      newTokens.push(new RightParenToken());
+    }
+
+    return new Expression(newTokens, "", this.previousResult);
+  }
+
+  /**
+   * 현재 입력이 있을 경우 숫자 토큰으로 변환하여 추가한 새 토큰 배열을 반환합니다.
+   * 헬퍼 메서드.
+   */
+  private addTokenWithCurrentInput(): Token[] {
+    if (!this.currentInput) {
+      return [...this.tokens];
+    }
+    return [...this.tokens, new NumberToken(this.currentInput)];
   }
 
   /**

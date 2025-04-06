@@ -8,38 +8,6 @@
 
 ## 아키텍처
 
-애플리케이션은 다음과 같은 명확한 레이어가 있는 클린 아키텍처 패턴을 따릅니다:
-
-```mermaid
-graph TD
-    UI[UI 레이어] --> Presenter[프레젠테이션 레이어]
-    Presenter --> Domain[도메인 레이어]
-    Domain --> Algorithm[알고리즘 레이어]
-
-    subgraph "UI 레이어"
-        CalculatorPanel[CalculatorPanel]
-        Display[Display]
-        Button[Button]
-    end
-
-    subgraph "프레젠테이션 레이어"
-        CalculatorPresenter[CalculatorPresenter.ts]
-        CalculatorStore[calculatorStore.ts]
-    end
-
-    subgraph "도메인 레이어"
-        CalculatorDomain[CalculatorDomain.ts]
-        CalculatorState[CalculatorState.ts]
-        CalculatorEvent[CalculatorEvent.ts]
-    end
-
-    subgraph "알고리즘 레이어"
-        ShuntingYard[ShuntingYard.ts]
-        Calculator[Calculator.ts]
-        BigNumber[BigNumber.ts]
-    end
-```
-
 ### 도메인 레이어
 
 도메인 레이어는 계산기의 핵심 비즈니스 로직을 포함합니다:

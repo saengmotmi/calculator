@@ -35,35 +35,9 @@ export class Lexer {
     // 2. 공백으로 분리된 각 토큰 처리
     const parts = processedInput.split(/\s+/);
 
-    // 3. 각 토큰을 처리하면서 음수 패턴을 감지
-    let i = 0;
-    while (i < parts.length) {
-      const part = parts[i];
-
-      // 음수 처리: - 연산자 다음에 숫자가 나오는 패턴 확인
-      if (
-        part === "-" &&
-        i + 1 < parts.length &&
-        this.isNumeric(parts[i + 1])
-      ) {
-        // 이 - 연산자가 음수의 부호인지 확인
-        const isNegativeSign =
-          i === 0 || // 표현식의 시작
-          (i > 0 &&
-            (isValidOperator(parts[i - 1]) || // 이전 토큰이 연산자
-              parts[i - 1] === "(")); // 이전 토큰이 왼쪽 괄호
-
-        if (isNegativeSign) {
-          // 음수로 처리: -와 숫자를 결합
-          this.tokens.push(new NumberToken("-" + parts[i + 1]));
-          i += 2; // 두 토큰을 하나로 처리했으므로 두 단계 건너뜀
-          continue;
-        }
-      }
-
-      // 일반 토큰 처리
+    // 3. 각 토큰을 순차적으로 처리
+    for (const part of parts) {
       this.tokenizePart(part);
-      i++;
     }
 
     return this.tokens;
@@ -96,7 +70,7 @@ export class Lexer {
       return;
     }
 
-    // 이미 위에서 음수를 처리했으므로 여기에 도달한 경우는 복합 토큰이나 잘못된 입력
+    // 인식할 수 없는 토큰
     if (part.length > 0) {
       console.warn(`인식할 수 없는 토큰: ${part}`);
     }

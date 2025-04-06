@@ -1,6 +1,8 @@
 import {
   Token,
   NumberToken,
+  LeftParenToken,
+  RightParenToken,
   isNumberToken,
   isLeftParenToken,
   isRightParenToken,
@@ -29,8 +31,29 @@ export class Parser {
     const lexer = new Lexer(expression);
     const rawTokens = lexer.tokenize();
 
+    return this.parseTokens(rawTokens);
+  }
+
+  /**
+   * 토큰 배열을 직접 받아 평가
+   */
+  parseTokens(inputTokens: Token[]): number {
+    // 복사본 생성 - 원본 변경 방지
+    const tokensCopy = inputTokens.map((token) => {
+      if (isNumberToken(token)) {
+        return new NumberToken(token.value);
+      } else if (isOperatorToken(token)) {
+        return new Operator(token.value);
+      } else if (isLeftParenToken(token)) {
+        return new LeftParenToken();
+      } else if (isRightParenToken(token)) {
+        return new RightParenToken();
+      }
+      return token; // 기본값
+    });
+
     // 암시적 곱셈 등 전처리 수행
-    this.tokens = this.processor.processTokens(rawTokens);
+    this.tokens = this.processor.processTokens(tokensCopy);
     this.position = 0;
 
     return this.evaluate();

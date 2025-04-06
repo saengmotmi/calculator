@@ -38,15 +38,14 @@ export class MathCalculator implements ICalculator {
 
     // 음수 처리: '-'가 표현식 시작이거나 연산자/괄호 다음에 오는 경우
     const lastToken = this.getLastToken();
-    if (
+    const isNegativeSign =
       opValue === OperatorType.MINUS &&
       (this.tokens.length === 0 ||
         (lastToken && isOperatorToken(lastToken)) ||
-        (lastToken && isLeftParenToken(lastToken)))
-    ) {
-      if (this.currentInput) {
-        this.addCurrentInputAsToken();
-      }
+        (lastToken && isLeftParenToken(lastToken)));
+
+    if (isNegativeSign && this.currentInput === "") {
+      // 음수 부호로 처리
       this.currentInput = "-";
       return;
     }
@@ -62,6 +61,7 @@ export class MathCalculator implements ICalculator {
       this.tokens.push(new NumberToken("0"));
     }
 
+    // 연산자를 토큰으로 추가
     this.tokens.push(new Operator(opValue));
   }
 
@@ -107,13 +107,9 @@ export class MathCalculator implements ICalculator {
     }
 
     try {
-      // 토큰 배열을 직접 문자열로 변환하지 않고 사용
-      // 단, 현재 Parser는 여전히 문자열 입력을 받으므로 변환 필요
-      const expression = this.tokensToExpression();
-      console.log("Evaluating expression:", expression);
-
-      // 파싱 및 평가
-      const result = this.parser.parse(expression);
+      // 토큰 배열을 직접 Parser에 전달하여 평가
+      // 배열 복사본을 만들어 전달 (불변성 유지)
+      const result = this.parser.parseTokens([...this.tokens]);
       console.log("Calculation result:", result);
 
       // 결과 저장 및 초기화

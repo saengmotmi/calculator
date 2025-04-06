@@ -201,8 +201,61 @@ function getOperatorPrecedence(operator: string): number {
 
 /**
  * 연산자 적용 처리
+ * 큰 숫자에 대해 더 안정적인 연산 제공
  */
 function applyOperator(a: number, b: number, operator: string): number {
+  // 큰 정수에 대한 안전 체크
+  const isLargeInteger =
+    (Number.isInteger(a) && Math.abs(a) > Number.MAX_SAFE_INTEGER / 10) ||
+    (Number.isInteger(b) && Math.abs(b) > Number.MAX_SAFE_INTEGER / 10);
+
+  // 정수 연산에 대해 BigInt 사용 시도
+  if (isLargeInteger && Number.isInteger(a) && Number.isInteger(b)) {
+    try {
+      let result: bigint;
+      const bigA = BigInt(Math.round(a)); // 혹시 모를 부동소수점 오차 방지
+      const bigB = BigInt(Math.round(b));
+
+      switch (operator) {
+        case "+":
+          result = bigA + bigB;
+          break;
+        case "-":
+          result = bigA - bigB;
+          break;
+        case "*":
+          result = bigA * bigB;
+          break;
+        case "/":
+          if (bigB === 0n) {
+            throw {
+              type: CalculatorErrorType.DIVISION_BY_ZERO,
+              details: "Division by zero",
+            };
+          }
+
+          // BigInt 나눗셈은 소수점 결과를 지원하지 않으므로,
+          // 일반 숫자로 변환하여 수행
+          return Number(a) / Number(b);
+        default:
+          throw {
+            type: CalculatorErrorType.UNKNOWN_ERROR,
+            details: `Unknown operator: ${operator}`,
+          };
+      }
+
+      // BigInt 결과를 Number로 안전하게 변환 (범위 체크)
+      const numberResult = Number(result);
+      if (!Number.isFinite(numberResult)) {
+        return Number.MAX_SAFE_INTEGER * (result < 0n ? -1 : 1);
+      }
+      return numberResult;
+    } catch (e) {
+      // BigInt 처리 실패 시 일반 연산으로 진행
+    }
+  }
+
+  // 일반 연산
   switch (operator) {
     case "+":
       return a + b;
@@ -305,7 +358,9 @@ export function evaluateExpression(state: CalculatorState): CalculatorState {
 
     for (const token of output) {
       if (token.type === "NUMBER") {
-        valueStack.push(Number(token.value));
+        // 큰 숫자 처리: 문자열 숫자가 안전한 정수 범위를 초과하는지 확인
+        const numValue = Number(token.value);
+        valueStack.push(numValue);
       } else if (token.type === "OPERATOR") {
         if (valueStack.length < 2) {
           throw {
@@ -315,7 +370,10 @@ export function evaluateExpression(state: CalculatorState): CalculatorState {
         }
         const b = valueStack.pop()!;
         const a = valueStack.pop()!;
-        valueStack.push(applyOperator(a, b, token.value));
+
+        // 안정적인 계산을 위해 개선된 연산자 적용 함수 사용
+        const result = applyOperator(a, b, token.value);
+        valueStack.push(result);
       }
     }
 

@@ -5,8 +5,6 @@ import {
   NumberToken,
   RightParenToken,
   Token,
-  isLeftParenToken,
-  isOperatorToken,
 } from "../../entities/tokens/Token";
 import { ICalculator } from "./ICalculator";
 
@@ -36,16 +34,8 @@ export class MathCalculator implements ICalculator {
   inputOperator(value: string | OperatorType): void {
     const opValue = value as OperatorType;
 
-    // 음수 처리: '-'가 표현식 시작이거나 연산자/괄호 다음에 오는 경우
-    const lastToken = this.getLastToken();
-    const isNegativeSign =
-      opValue === OperatorType.MINUS &&
-      (this.tokens.length === 0 ||
-        (lastToken && isOperatorToken(lastToken)) ||
-        (lastToken && isLeftParenToken(lastToken)));
-
-    if (isNegativeSign && this.currentInput === "") {
-      // 음수 부호로 처리
+    // '-' 연산자가 입력되었고 현재 입력이 비어있는 경우, 음수 부호로 처리
+    if (opValue === OperatorType.MINUS && this.currentInput === "") {
       this.currentInput = "-";
       return;
     }
@@ -56,9 +46,6 @@ export class MathCalculator implements ICalculator {
     } else if (this.previousResult !== null && this.tokens.length === 0) {
       // 이전 결과를 현재 수식의 시작으로 사용
       this.tokens.push(new NumberToken(`${this.previousResult}`));
-    } else if (this.tokens.length === 0 && opValue !== OperatorType.MINUS) {
-      // 수식이 비어있는데 연산자가 오면 0을 먼저 추가 (단, 음수는 제외)
-      this.tokens.push(new NumberToken("0"));
     }
 
     // 연산자를 토큰으로 추가
@@ -75,19 +62,6 @@ export class MathCalculator implements ICalculator {
 
     const parenToken =
       paren === "(" ? new LeftParenToken() : new RightParenToken();
-
-    // 암시적 곱셈 처리 - 숫자 뒤에 왼쪽 괄호가 오는 경우
-    if (paren === "(" && this.tokens.length > 0) {
-      const lastToken = this.getLastToken();
-      // 숫자나 오른쪽 괄호 다음에 왼쪽 괄호가 오면 곱셈 추가
-      if (
-        lastToken &&
-        !isOperatorToken(lastToken) &&
-        !isLeftParenToken(lastToken)
-      ) {
-        this.tokens.push(new Operator(OperatorType.MULTIPLY));
-      }
-    }
 
     this.tokens.push(parenToken);
   }
@@ -110,7 +84,6 @@ export class MathCalculator implements ICalculator {
       // 토큰 배열을 직접 Parser에 전달하여 평가
       // 배열 복사본을 만들어 전달 (불변성 유지)
       const result = this.parser.parseTokens([...this.tokens]);
-      console.log("Calculation result:", result);
 
       // 결과 저장 및 초기화
       this.previousResult = result;
@@ -186,16 +159,9 @@ export class MathCalculator implements ICalculator {
   }
 
   /**
-   * 토큰 배열을 문자열 표현으로 변환
+   * 토큰 배열을 문자열 표현으로 변환 (디버깅 및 표시 목적)
    */
   private tokensToExpression(): string {
     return this.tokens.map((token) => token.value).join(" ");
-  }
-
-  /**
-   * 마지막 토큰 반환 (없으면 null)
-   */
-  private getLastToken(): Token | null {
-    return this.tokens.length > 0 ? this.tokens[this.tokens.length - 1] : null;
   }
 }

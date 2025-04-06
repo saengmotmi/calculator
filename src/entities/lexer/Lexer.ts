@@ -4,156 +4,108 @@ import {
   LeftParenToken,
   RightParenToken,
 } from "../tokens/Token";
-import { Operator, isValidOperator } from "../tokens/Operator";
+import { Operator, isValidOperator, OperatorType } from "../tokens/Operator";
 
 /**
  * 렉서 클래스: 문자열을 토큰으로 변환
  */
 export class Lexer {
-  private position: number = 0;
   private input: string;
   private tokens: Token[] = [];
 
   constructor(input: string) {
-    // 공백을 제거한 입력값 사용
-    this.input = input.replace(/\s+/g, "");
+    // 입력값에서 불필요한 공백 처리 (단어 사이의 공백은 유지)
+    this.input = input.trim();
   }
 
   /**
    * 입력 문자열의 모든 토큰을 생성하여 반환
    */
   tokenize(): Token[] {
-    this.position = 0;
     this.tokens = [];
 
-    while (!this.isEOF()) {
-      this.consumeToken();
+    // 1. 먼저 연산자와 괄호 주변에 공백을 추가하여 토큰 분리를 쉽게 함
+    let processedInput = this.input
+      .replace(/([+\-*/()])/g, " $1 ") // 연산자와 괄호 주변에 공백 추가
+      .replace(/\s+/g, " ") // 중복 공백 제거
+      .trim(); // 앞뒤 공백 제거
+
+    console.log("전처리된 입력:", processedInput);
+
+    // 2. 공백으로 분리된 각 토큰 처리
+    const parts = processedInput.split(/\s+/);
+
+    // 3. 각 토큰을 처리하면서 음수 패턴을 감지
+    let i = 0;
+    while (i < parts.length) {
+      const part = parts[i];
+
+      // 음수 처리: - 연산자 다음에 숫자가 나오는 패턴 확인
+      if (
+        part === "-" &&
+        i + 1 < parts.length &&
+        this.isNumeric(parts[i + 1])
+      ) {
+        // 이 - 연산자가 음수의 부호인지 확인
+        const isNegativeSign =
+          i === 0 || // 표현식의 시작
+          (i > 0 &&
+            (isValidOperator(parts[i - 1]) || // 이전 토큰이 연산자
+              parts[i - 1] === "(")); // 이전 토큰이 왼쪽 괄호
+
+        if (isNegativeSign) {
+          // 음수로 처리: -와 숫자를 결합
+          this.tokens.push(new NumberToken("-" + parts[i + 1]));
+          i += 2; // 두 토큰을 하나로 처리했으므로 두 단계 건너뜀
+          continue;
+        }
+      }
+
+      // 일반 토큰 처리
+      this.tokenizePart(part);
+      i++;
     }
 
     return this.tokens;
   }
 
   /**
-   * 현재 위치에서 토큰을 소비하고 위치를 이동
+   * 단일 부분을 토큰화
    */
-  private consumeToken(): void {
-    const currentChar = this.peek();
+  private tokenizePart(part: string): void {
+    // 숫자인 경우
+    if (this.isNumeric(part)) {
+      this.tokens.push(new NumberToken(part));
+      return;
+    }
 
-    // 숫자 처리
-    if (this.isDigit(currentChar) || this.isNegativeNumber()) {
-      this.consumeNumber();
+    // 연산자인 경우
+    if (isValidOperator(part)) {
+      this.tokens.push(new Operator(part));
+      return;
     }
-    // 괄호 처리
-    else if (currentChar === "(") {
-      this.tokens.push(new LeftParenToken(this.position));
-      this.advance();
-    } else if (currentChar === ")") {
-      this.tokens.push(new RightParenToken(this.position));
-      this.advance();
+
+    // 괄호인 경우
+    if (part === "(") {
+      this.tokens.push(new LeftParenToken());
+      return;
     }
-    // 연산자 처리
-    else if (isValidOperator(currentChar)) {
-      this.consumeOperator();
+
+    if (part === ")") {
+      this.tokens.push(new RightParenToken());
+      return;
     }
-    // 알 수 없는 문자는 건너뜀
-    else {
-      this.advance();
+
+    // 이미 위에서 음수를 처리했으므로 여기에 도달한 경우는 복합 토큰이나 잘못된 입력
+    if (part.length > 0) {
+      console.warn(`인식할 수 없는 토큰: ${part}`);
     }
   }
 
   /**
-   * 현재 위치에서 숫자 토큰을 소비
+   * 문자열이 숫자인지 확인
    */
-  private consumeNumber(): void {
-    const start = this.position;
-    let isNegative = false;
-
-    // 음수 처리
-    if (this.peek() === "-") {
-      isNegative = true;
-      this.advance();
-    }
-
-    // 숫자 부분 읽기
-    while (!this.isEOF() && this.isDigit(this.peek())) {
-      this.advance();
-    }
-
-    // 소숫점 처리
-    if (!this.isEOF() && this.peek() === ".") {
-      this.advance();
-
-      while (!this.isEOF() && this.isDigit(this.peek())) {
-        this.advance();
-      }
-    }
-
-    const numberStr = this.input.substring(start, this.position);
-    this.tokens.push(new NumberToken(numberStr, start));
-  }
-
-  /**
-   * 현재 위치에서 연산자 토큰을 소비
-   */
-  private consumeOperator(): void {
-    const operatorChar = this.peek();
-    this.tokens.push(new Operator(operatorChar, this.position));
-    this.advance();
-  }
-
-  /**
-   * 현재 위치가 음수의 시작인지 확인
-   */
-  private isNegativeNumber(): boolean {
-    // '-'가 처음에 오거나, 직전 토큰이 연산자 또는 왼쪽 괄호인 경우 음수로 간주
-    if (this.peek() !== "-") return false;
-
-    if (this.position === 0) return true;
-
-    // 다음 문자가 숫자인지 확인 (음수여야 함)
-    if (
-      this.position + 1 < this.input.length &&
-      !this.isDigit(this.input[this.position + 1])
-    ) {
-      return false;
-    }
-
-    // 이전 토큰 확인
-    if (this.tokens.length > 0) {
-      const prevToken = this.tokens[this.tokens.length - 1];
-      return (
-        prevToken instanceof Operator || prevToken instanceof LeftParenToken
-      );
-    }
-
-    return true;
-  }
-
-  /**
-   * 현재 위치의 문자를 읽고 위치를 증가시키지 않음
-   */
-  private peek(): string {
-    return this.input[this.position];
-  }
-
-  /**
-   * 위치를 한 칸 증가
-   */
-  private advance(): void {
-    this.position++;
-  }
-
-  /**
-   * 입력의 끝에 도달했는지 확인
-   */
-  private isEOF(): boolean {
-    return this.position >= this.input.length;
-  }
-
-  /**
-   * 문자가 숫자인지 확인
-   */
-  private isDigit(char: string): boolean {
-    return /[0-9]/.test(char);
+  private isNumeric(str: string): boolean {
+    return !isNaN(parseFloat(str)) && isFinite(Number(str));
   }
 }

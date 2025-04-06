@@ -59,7 +59,9 @@ describe("계산기 백스페이스 기능 테스트", () => {
 
     // 이 상태에서 백스페이스를 누르면 결과는 유지되어야 함
     fireEvent.click(screen.getByRole("button", { name: /뒤로 가기/i }));
-    expect(screen.getByRole("status")).toHaveTextContent("3");
+
+    // 결과가 표시됨
+    expect(screen.getByLabelText("수식")).toHaveTextContent("3");
 
     // 이후 새 숫자를 입력하면 새 계산 시작
     fireEvent.click(screen.getByRole("button", { name: /숫자 5/i }));

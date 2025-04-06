@@ -1,19 +1,30 @@
 import { CalculatorCore } from "../../core/calculator/CalculatorCore";
-import { CalculatorEvent } from "../../core/calculator/CalculatorEvent";
-import { CalculatorPresenter } from "../../core/calculator/CalculatorPresenter";
+import { CalculatorEvent } from "../../core/calculator/domain/CalculatorEvent";
+import {
+  CalculatorDisplayData,
+  CalculatorPresenter,
+} from "../../core/calculator/CalculatorPresenter";
 
 type Listener = () => void;
 
 /**
- * 계산기 UI 상태 관리를 위한 스토어
- * 모든 UI 조작을 이벤트로 변환하여 도메인 모델에 전달
+ * UI에 반환되는 스냅샷 인터페이스 (레거시 호환성)
+ */
+interface CalculatorSnapshot {
+  expression: string;
+  result: number | null;
+}
+
+/**
+ * 계산기 UI 상태 관리 스토어
+ * UI와 도메인 모델 사이의 중재자 역할
  */
 class CalculatorStore {
   private core: CalculatorCore;
   private presenter: CalculatorPresenter;
   private listeners: Set<Listener> = new Set();
-  private lastSnapshot: { expression: string; result: number | null } | null =
-    null;
+  private cachedDisplayData: CalculatorDisplayData | null = null;
+  private cachedSnapshot: CalculatorSnapshot | null = null;
 
   constructor() {
     // 도메인 코어 및 프레젠터 초기화
@@ -30,87 +41,65 @@ class CalculatorStore {
   };
 
   /**
-   * 현재 상태 스냅샷 반환 (UI 표시 형식)
+   * 현재 UI 데이터를 레거시 스냅샷 형식으로 변환 (안전한 메모이제이션)
    */
-  getSnapshot = () => {
+  getSnapshot = (): CalculatorSnapshot => {
+    // 현재 표시 데이터 가져오기
     const displayData = this.presenter.getDisplayData();
 
-    // 새로운 스냅샷 생성
+    // 이전과 동일한 데이터인지 확인 (참조 비교가 아닌 내용 비교)
+    if (
+      this.cachedDisplayData &&
+      this.cachedSnapshot &&
+      this.cachedDisplayData.displayText === displayData.displayText &&
+      this.cachedDisplayData.resultText === displayData.resultText
+    ) {
+      return this.cachedSnapshot; // 캐시된 스냅샷 재사용
+    }
+
+    // 새 스냅샷 생성
     const newSnapshot = {
       expression: displayData.displayText,
       result: displayData.resultText ? Number(displayData.resultText) : null,
     };
 
-    // 이전 스냅샷과 동일하면 기존 객체 반환 (성능 최적화)
-    if (
-      this.lastSnapshot &&
-      this.lastSnapshot.expression === newSnapshot.expression &&
-      this.lastSnapshot.result === newSnapshot.result
-    ) {
-      return this.lastSnapshot;
-    }
+    // 캐시 업데이트
+    this.cachedDisplayData = { ...displayData };
+    this.cachedSnapshot = newSnapshot;
 
-    // 새로운 스냅샷 저장 및 반환
-    this.lastSnapshot = newSnapshot;
-    return this.lastSnapshot;
+    return newSnapshot;
   };
 
   /**
-   * 리스너에 상태 변경 알림
+   * 상태 변경 알림
    */
   private notify(): void {
+    // 캐시 초기화 (상태가 변경되었으므로)
+    this.cachedDisplayData = null;
+    this.cachedSnapshot = null;
+
+    // 리스너에 알림
     this.listeners.forEach((listener) => listener());
   }
 
   /**
-   * 계산기 도메인 이벤트 전달
+   * 계산기 이벤트 전달 및 UI 업데이트
    */
-  private dispatchEvent(event: CalculatorEvent): void {
+  private dispatch(event: CalculatorEvent): void {
     this.core.apply(event);
     this.notify();
-  }
-
-  /**
-   * 숫자 입력
-   */
-  inputNumber(value: string | number): void {
-    this.dispatchEvent({
-      type: "DIGIT_INPUT",
-      digit: value.toString(),
-    });
-  }
-
-  /**
-   * 연산자 입력
-   */
-  inputOperator(value: string): void {
-    this.dispatchEvent({
-      type: "OPERATOR_INPUT",
-      operator: value,
-    });
-  }
-
-  /**
-   * 괄호 입력
-   */
-  inputParenthesis(value: string): void {
-    this.dispatchEvent({
-      type: "PARENTHESIS_INPUT",
-      parenthesis: value,
-    });
   }
 
   /**
    * 통합 입력 처리 메서드
    */
   input(value: string): void {
-    // 입력 타입에 따른 이벤트 생성 및 전달
     if (!isNaN(Number(value))) {
-      this.inputNumber(value);
+      this.dispatch({ type: "DIGIT_INPUT", digit: value });
     } else if (value === "(" || value === ")") {
-      this.inputParenthesis(value);
+      this.dispatch({ type: "PARENTHESIS_INPUT", parenthesis: value });
     } else {
-      this.inputOperator(value);
+      this.dispatch({ type: "OPERATOR_INPUT", operator: value });
     }
   }
 
@@ -118,21 +107,21 @@ class CalculatorStore {
    * 계산 실행
    */
   calculate(): void {
-    this.dispatchEvent({ type: "CALCULATE" });
+    this.dispatch({ type: "CALCULATE" });
   }
 
   /**
    * 모든 상태 초기화
    */
   clear(): void {
-    this.dispatchEvent({ type: "CLEAR_ALL" });
+    this.dispatch({ type: "CLEAR_ALL" });
   }
 
   /**
    * 백스페이스 처리
    */
   backspace(): void {
-    this.dispatchEvent({ type: "BACKSPACE" });
+    this.dispatch({ type: "BACKSPACE" });
   }
 }
 

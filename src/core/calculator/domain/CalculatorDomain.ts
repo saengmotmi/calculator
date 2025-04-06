@@ -5,7 +5,80 @@ import {
   Token,
   initialCalculatorState,
 } from "./CalculatorState";
-import { BigNumber } from "../BigNumber";
+import {
+  convertToPostfix,
+  ShuntingYardError,
+  AlgorithmError,
+} from "../algorithms/ShuntingYard";
+import {
+  shouldUsePreciseCalculation,
+  calculateStandard,
+  calculateWithPrecision,
+  CalculationError,
+  CalculationErrorInfo,
+} from "../algorithms/Calculator";
+
+/**
+ * 알고리즘 오류를 도메인 오류로 변환
+ */
+function mapAlgorithmErrorToDomainError(error: AlgorithmError): {
+  type: CalculatorErrorType;
+  details: string;
+} {
+  switch (error.type) {
+    case ShuntingYardError.MISMATCHED_PARENTHESES:
+      return {
+        type: CalculatorErrorType.SYNTAX_ERROR,
+        details: "괄호가 맞지 않습니다",
+      };
+    case ShuntingYardError.INVALID_TOKEN:
+      return {
+        type: CalculatorErrorType.SYNTAX_ERROR,
+        details: "잘못된 수식 형식입니다",
+      };
+    default:
+      return {
+        type: CalculatorErrorType.UNKNOWN_ERROR,
+        details: error.details || "알 수 없는 오류가 발생했습니다",
+      };
+  }
+}
+
+/**
+ * 계산 오류를 도메인 오류로 변환
+ */
+function mapCalculationErrorToDomainError(error: CalculationErrorInfo): {
+  type: CalculatorErrorType;
+  details: string;
+} {
+  switch (error.type) {
+    case CalculationError.DIVISION_BY_ZERO:
+      return {
+        type: CalculatorErrorType.DIVISION_BY_ZERO,
+        details: "0으로 나눌 수 없습니다",
+      };
+    case CalculationError.INCOMPLETE_EXPRESSION:
+      return {
+        type: CalculatorErrorType.INCOMPLETE_EXPRESSION,
+        details: "수식이 완전하지 않습니다",
+      };
+    case CalculationError.INVALID_OPERATOR:
+      return {
+        type: CalculatorErrorType.SYNTAX_ERROR,
+        details: "올바르지 않은 연산자입니다",
+      };
+    case CalculationError.OVERFLOW:
+      return {
+        type: CalculatorErrorType.UNKNOWN_ERROR,
+        details: "계산 결과가 너무 큽니다",
+      };
+    default:
+      return {
+        type: CalculatorErrorType.UNKNOWN_ERROR,
+        details: error.details || "계산 중 오류가 발생했습니다",
+      };
+  }
+}
 
 /**
  * 숫자 토큰 생성
@@ -185,110 +258,6 @@ export function applyParenthesisInput(
 }
 
 /**
- * 토큰의 우선순위 반환
- */
-function getOperatorPrecedence(operator: string): number {
-  switch (operator) {
-    case "+":
-    case "-":
-      return 1;
-    case "*":
-    case "/":
-      return 2;
-    default:
-      return 0;
-  }
-}
-
-/**
- * 연산자 적용 처리
- * 순수하게 기본 연산만 수행, 복잡한 계산은 evaluateExpression에서 처리
- */
-function applyOperator(a: number, b: number, operator: string): number {
-  switch (operator) {
-    case "+":
-      return a + b;
-    case "-":
-      return a - b;
-    case "*":
-      return a * b;
-    case "/":
-      if (b === 0) {
-        throw {
-          type: CalculatorErrorType.DIVISION_BY_ZERO,
-          details: "Division by zero",
-        };
-      }
-      return a / b;
-    default:
-      throw {
-        type: CalculatorErrorType.UNKNOWN_ERROR,
-        details: `Unknown operator: ${operator}`,
-      };
-  }
-}
-
-/**
- * 중위 표기식을 후위 표기식으로 변환 (Shunting Yard 알고리즘)
- */
-function convertToPostfix(tokens: Token[]): Token[] {
-  const output: Token[] = [];
-  const operators: Token[] = [];
-
-  for (const token of tokens) {
-    if (token.type === "NUMBER") {
-      output.push(token);
-    } else if (token.type === "OPERATOR") {
-      while (
-        operators.length > 0 &&
-        operators[operators.length - 1].type === "OPERATOR" &&
-        getOperatorPrecedence(operators[operators.length - 1].value) >=
-          getOperatorPrecedence(token.value)
-      ) {
-        output.push(operators.pop()!);
-      }
-      operators.push(token);
-    } else if (token.type === "LEFT_PAREN") {
-      operators.push(token);
-    } else if (token.type === "RIGHT_PAREN") {
-      while (
-        operators.length > 0 &&
-        operators[operators.length - 1].type !== "LEFT_PAREN"
-      ) {
-        output.push(operators.pop()!);
-      }
-
-      // 왼쪽 괄호 제거
-      if (
-        operators.length > 0 &&
-        operators[operators.length - 1].type === "LEFT_PAREN"
-      ) {
-        operators.pop();
-      } else {
-        throw {
-          type: CalculatorErrorType.SYNTAX_ERROR,
-          details: "Mismatched parentheses",
-        };
-      }
-    }
-  }
-
-  // 남은 연산자 모두 출력
-  while (operators.length > 0) {
-    const op = operators.pop()!;
-    if (op.type === "LEFT_PAREN") {
-      throw {
-        type: CalculatorErrorType.SYNTAX_ERROR,
-        details: "Mismatched parentheses",
-      };
-    }
-    output.push(op);
-  }
-
-  return output;
-}
-
-/**
  * 표현식 계산 처리
  */
 export function evaluateExpression(state: CalculatorState): CalculatorState {
@@ -312,22 +281,40 @@ export function evaluateExpression(state: CalculatorState): CalculatorState {
     const needsPreciseCalculation =
       shouldUsePreciseCalculation(tokensToEvaluate);
 
-    // 중위 표기식을 후위 표기식으로 변환
-    const postfixTokens = convertToPostfix(tokensToEvaluate);
+    let postfixTokens: Token[];
 
-    // 계산 수행 (필요시 정밀 계산 사용)
-    const result = needsPreciseCalculation
-      ? calculateWithPrecision(postfixTokens)
-      : calculateStandard(postfixTokens);
+    try {
+      // 중위 표기식을 후위 표기식으로 변환
+      postfixTokens = convertToPostfix(tokensToEvaluate);
+    } catch (algorithmError) {
+      // Shunting Yard 알고리즘 오류를 도메인 오류로 변환
+      const domainError = mapAlgorithmErrorToDomainError(
+        algorithmError as AlgorithmError
+      );
+      throw domainError;
+    }
 
-    // 결과 반환
-    return {
-      tokens: [],
-      currentInput: "",
-      result,
-      mode: CalculatorMode.RESULT,
-      error: null,
-    };
+    try {
+      // 계산 수행 (필요시 정밀 계산 사용)
+      const result = needsPreciseCalculation
+        ? calculateWithPrecision(postfixTokens)
+        : calculateStandard(postfixTokens);
+
+      // 결과 반환
+      return {
+        tokens: [],
+        currentInput: "",
+        result,
+        mode: CalculatorMode.RESULT,
+        error: null,
+      };
+    } catch (calculationError) {
+      // 계산 알고리즘 오류를 도메인 오류로 변환
+      const domainError = mapCalculationErrorToDomainError(
+        calculationError as CalculationErrorInfo
+      );
+      throw domainError;
+    }
   } catch (err) {
     return {
       ...state,
@@ -338,116 +325,16 @@ export function evaluateExpression(state: CalculatorState): CalculatorState {
 }
 
 /**
- * 정밀 계산이 필요한지 확인
- */
-function shouldUsePreciseCalculation(tokens: Token[]): boolean {
-  // 큰 숫자 확인
-  const hasLargeNumbers = tokens.some((token) => {
-    if (token.type === "NUMBER") {
-      const num = Number(token.value);
-      return Math.abs(num) > 1e10 || token.value.length > 15;
-    }
-    return false;
-  });
-
-  // 나눗셈 연산 확인
-  const hasDivision = tokens.some(
-    (token) => token.type === "OPERATOR" && token.value === "/"
-  );
-
-  return hasLargeNumbers || hasDivision;
-}
-
-/**
- * 일반 계산 수행 (작은 숫자, 정수 계산)
- */
-function calculateStandard(postfixTokens: Token[]): number {
-  const valueStack: number[] = [];
-
-  for (const token of postfixTokens) {
-    if (token.type === "NUMBER") {
-      valueStack.push(Number(token.value));
-    } else if (token.type === "OPERATOR") {
-      if (valueStack.length < 2) {
-        throw {
-          type: CalculatorErrorType.INCOMPLETE_EXPRESSION,
-          details: "Invalid expression",
-        };
-      }
-      const b = valueStack.pop()!;
-      const a = valueStack.pop()!;
-
-      valueStack.push(applyOperator(a, b, token.value));
-    }
-  }
-
-  if (valueStack.length !== 1) {
-    throw {
-      type: CalculatorErrorType.INCOMPLETE_EXPRESSION,
-      details: "Invalid expression",
-    };
-  }
-
-  return valueStack[0];
-}
-
-/**
- * 정밀 계산 수행 (큰 숫자, 나눗셈 등)
- */
-function calculateWithPrecision(postfixTokens: Token[]): number {
-  const valueStack: string[] = [];
-
-  for (const token of postfixTokens) {
-    if (token.type === "NUMBER") {
-      valueStack.push(token.value);
-    } else if (token.type === "OPERATOR") {
-      if (valueStack.length < 2) {
-        throw {
-          type: CalculatorErrorType.INCOMPLETE_EXPRESSION,
-          details: "Invalid expression",
-        };
-      }
-      const b = valueStack.pop()!;
-      const a = valueStack.pop()!;
-
-      // BigNumber로 정밀한 계산 수행
-      const result = BigNumber.calculate(a, token.value, b);
-
-      // 오류 검사
-      if (result.startsWith("Error:")) {
-        throw {
-          type:
-            token.value === "/" && b === "0"
-              ? CalculatorErrorType.DIVISION_BY_ZERO
-              : CalculatorErrorType.UNKNOWN_ERROR,
-          details: result.substring(7), // 'Error: ' 제거
-        };
-      }
-
-      valueStack.push(result);
-    }
-  }
-
-  if (valueStack.length !== 1) {
-    throw {
-      type: CalculatorErrorType.INCOMPLETE_EXPRESSION,
-      details: "Invalid expression",
-    };
-  }
-
-  return Number(valueStack[0]);
-}
-
-/**
  * 백스페이스 처리
+ * 도메인 규칙에 따라 상태를 일관되게 관리합니다.
  */
 export function applyBackspace(state: CalculatorState): CalculatorState {
-  // 1. 에러 상태에서는 초기 상태로 리셋
+  // 에러 상태에서는 초기화
   if (state.mode === CalculatorMode.ERROR) {
-    return initialCalculatorState;
+    return { ...initialCalculatorState };
   }
 
-  // 2. 결과 상태에서는 결과를 첫 토큰으로 변환하고 입력 모드로 전환
+  // 결과 상태에서는 결과를 토큰으로 변환하고 입력 모드로 전환
   if (state.mode === CalculatorMode.RESULT) {
     const result = state.result;
     return {
@@ -459,88 +346,50 @@ export function applyBackspace(state: CalculatorState): CalculatorState {
     };
   }
 
-  // 3. 현재 입력이 있는 경우: 마지막 문자 제거
+  // 현재 입력이 있으면 마지막 문자 삭제
   if (state.currentInput.length > 0) {
-    const newInput = state.currentInput.slice(0, -1);
     return {
       ...state,
-      currentInput: newInput,
+      currentInput: state.currentInput.slice(0, -1),
     };
   }
 
-  // 4. 토큰이 있는 경우: 마지막 토큰 처리
-  if (state.tokens.length > 0) {
-    const lastToken = state.tokens[state.tokens.length - 1];
+  // 토큰이 없으면 변경 없음
+  if (state.tokens.length === 0) {
+    return state;
+  }
 
-    // 4.1 숫자 토큰이고 두 자리 이상인 경우: 마지막 자릿수 제거
-    if (lastToken.type === "NUMBER" && lastToken.value.length > 1) {
-      const newValue = lastToken.value.slice(0, -1);
-      return {
-        ...state,
-        tokens: [
-          ...state.tokens.slice(0, -1),
-          { ...lastToken, value: newValue },
-        ],
-      };
-    }
+  // 마지막 토큰 처리
+  const lastToken = state.tokens[state.tokens.length - 1];
 
-    // 4.2 그 외의 경우: 토큰 자체를 제거
+  // 숫자 토큰이고 두 자리 이상인 경우: 마지막 자릿수만 제거
+  if (lastToken.type === "NUMBER" && lastToken.value.length > 1) {
+    const newValue = lastToken.value.slice(0, -1);
     return {
       ...state,
-      tokens: state.tokens.slice(0, -1),
+      tokens: [...state.tokens.slice(0, -1), { ...lastToken, value: newValue }],
     };
   }
 
-  // 5. 이미 비어있는 상태면 그대로 유지
-  return state;
-}
-
-/**
- * 현재 수식만 초기화
- */
-export function clearExpression(state: CalculatorState): CalculatorState {
+  // 토큰 자체를 제거 (한 자리 숫자이거나 다른 토큰 타입)
   return {
     ...state,
-    tokens: [],
-    currentInput: "",
-    mode: CalculatorMode.INPUT,
+    tokens: state.tokens.slice(0, -1),
   };
 }
 
 /**
- * 상태를 문자열로 변환
- * 순수하게 상태 내용을 문자열로 표현합니다.
+ * 수식 초기화 (결과는 유지)
  */
-export function stateToString(state: CalculatorState): string {
-  // 에러 상태인 경우 에러 메시지 반환
-  if (state.mode === CalculatorMode.ERROR && state.error) {
-    return `Error: ${state.error.details}`;
-  }
+export function clearExpression(state: CalculatorState): CalculatorState {
+  // 이전 결과 유지
+  const prevResult = state.mode === CalculatorMode.RESULT ? state.result : null;
 
-  // 결과 상태인 경우 결과값 반환
-  if (state.mode === CalculatorMode.RESULT && state.result !== null) {
-    return state.result.toString();
-  }
-
-  // 빈 상태(토큰과 입력이 없는 경우) "0" 반환
-  if (state.tokens.length === 0 && state.currentInput === "") {
-    return "0";
-  }
-
-  // 입력 상태에서는 토큰과 현재 입력을 결합
-  let expression = "";
-
-  // 토큰이 있으면 토큰 문자열 구성
-  if (state.tokens.length > 0) {
-    expression = state.tokens.map((token) => token.value).join(" ");
-  }
-
-  // 현재 입력이 있으면 추가
-  if (state.currentInput) {
-    expression = expression
-      ? `${expression} ${state.currentInput}`
-      : state.currentInput;
-  }
-
-  return expression;
+  return {
+    tokens: [],
+    currentInput: "",
+    result: prevResult,
+    mode: CalculatorMode.INPUT,
+    error: null,
+  };
 }

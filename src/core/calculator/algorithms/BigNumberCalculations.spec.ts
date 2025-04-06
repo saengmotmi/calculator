@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatResultWithBigInt } from "./CalculatorPresenter";
+import { formatResultWithBigInt } from "../CalculatorPresenter";
 import { BigNumber } from "./BigNumber";
 
 describe("큰 숫자 계산 테스트", () => {

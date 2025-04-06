@@ -1,7 +1,10 @@
 import { CalculatorCore } from "./CalculatorCore";
-import { stateToString } from "./domain/CalculatorDomain";
-import { CalculatorErrorType, CalculatorMode } from "./domain/CalculatorState";
-import { BigNumber } from "./BigNumber";
+import {
+  CalculatorErrorType,
+  CalculatorMode,
+  CalculatorState,
+} from "./domain/CalculatorState";
+import { BigNumber } from "./algorithms/BigNumber";
 
 /**
  * UI 디스플레이 데이터 인터페이스
@@ -18,6 +21,54 @@ export interface CalculatorDisplayData {
   errorMessage: string | null;
   /** 계산기 상태 (UI 상태 관리용) */
   mode: "input" | "result" | "error";
+}
+
+/**
+ * 도메인 상태를 UI 표시용 문자열로 변환
+ * 프레젠테이션 로직: 도메인 상태를 사용자가 볼 수 있는 형태로 변환
+ */
+export function stateToString(state: CalculatorState): string {
+  // 에러 상태인 경우 에러 메시지 반환
+  if (state.mode === CalculatorMode.ERROR && state.error) {
+    return `Error: ${state.error.details}`;
+  }
+
+  // 결과 상태인 경우 결과값 반환
+  if (state.mode === CalculatorMode.RESULT && state.result !== null) {
+    return state.result.toString();
+  }
+
+  // 결과 값이 있는 토큰이 하나인 경우 (백스페이스 처리 후)
+  if (
+    state.tokens.length === 1 &&
+    state.tokens[0].type === "NUMBER" &&
+    state.currentInput === ""
+  ) {
+    return state.tokens[0].value;
+  }
+
+  // 빈 상태(토큰과 입력이 없는 경우) "0" 반환 - UI 표현 규칙
+  if (state.tokens.length === 0 && state.currentInput === "") {
+    return "0";
+  }
+
+  // 입력 상태에서는 토큰과 현재 입력을 결합
+  let expression = "";
+
+  // 토큰이 있으면 토큰 문자열 구성
+  if (state.tokens.length > 0) {
+    // UI 표현을 위한 공백 추가 - 도메인 로직과 무관한 표현 형식
+    expression = state.tokens.map((token) => token.value).join(" ");
+  }
+
+  // 현재 입력이 있으면 추가 (UI 표현을 위한 공백 처리)
+  if (state.currentInput) {
+    expression = expression
+      ? `${expression} ${state.currentInput}`
+      : state.currentInput;
+  }
+
+  return expression;
 }
 
 /**

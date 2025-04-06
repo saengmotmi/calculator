@@ -45,11 +45,29 @@ export class BasicMathEvaluator implements Evaluator {
       .map((token) => token.trim())
       .filter((token) => token.length > 0);
 
+    // Handle negative numbers first
+    for (let i = 0; i < tokens.length; i++) {
+      if (
+        tokens[i] === "-" &&
+        (i === 0 ||
+          tokens[i - 1] === "(" ||
+          Object.values(OPERATORS).includes(tokens[i - 1] as OPERATORS))
+      ) {
+        tokens[i + 1] = "-" + tokens[i + 1];
+        tokens.splice(i, 1);
+      }
+    }
+
+    // Handle implicit multiplication (number followed by parenthesis)
     const result: string[] = [];
     for (let i = 0; i < tokens.length; i++) {
       const token = tokens[i];
       result.push(token);
-      if (i < tokens.length - 1 && !isNaN(Number(token)) && tokens[i + 1] === "(") {
+      if (
+        i < tokens.length - 1 &&
+        !isNaN(Number(token)) &&
+        tokens[i + 1] === "("
+      ) {
         result.push(OPERATORS.MULTIPLY);
       }
     }

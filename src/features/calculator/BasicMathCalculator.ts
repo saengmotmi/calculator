@@ -12,10 +12,16 @@ export class BasicMathCalculator {
   private inputHistory: string[] = [];
   private currentInput: string = "";
   private previousResult: number | null = null; // 마지막 계산 결과 저장
+  private isNegative: boolean = false; // 음수 여부를 추적
 
   inputNumber(number: string | number) {
     // 현재 입력을 문자열로 저장하여 여러 자릿수 숫자 입력을 지원
-    this.currentInput += `${number}`;
+    if (this.isNegative) {
+      this.currentInput += `-${number}`;
+      this.isNegative = false;
+    } else {
+      this.currentInput += `${number}`;
+    }
   }
 
   inputOperator(operator: OPERATORS) {

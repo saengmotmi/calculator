@@ -130,4 +130,44 @@ describe("기본 사칙연산 계산기 기능", () => {
 
     expect(calculator.evaluate()).toBe(123 * 123);
   });
+
+  it("음수에 대한 덧셈을 수행할 수 있다", () => {
+    const calculator = new BasicMathCalculator();
+    // "-123 + 1";
+    calculator.inputNumber(-123);
+    calculator.inputOperator("+");
+    calculator.inputNumber(1);
+
+    expect(calculator.evaluate()).toBe(-122);
+  });
+
+  it("음수에 대한 뺄셈을 수행할 수 있다", () => {
+    const calculator = new BasicMathCalculator();
+    // "-123 - 1";
+    calculator.inputNumber(-123);
+    calculator.inputOperator("-");
+    calculator.inputNumber(1);
+
+    expect(calculator.evaluate()).toBe(-124);
+  });
+
+  it("음수에 대한 곱셈을 수행할 수 있다", () => {
+    const calculator = new BasicMathCalculator();
+    // "-123 * 2";
+    calculator.inputNumber(-123);
+    calculator.inputOperator("*");
+    calculator.inputNumber(2);
+
+    expect(calculator.evaluate()).toBe(-246);
+  });
+
+  it("음수에 대한 나눗셈을 수행할 수 있다", () => {
+    const calculator = new BasicMathCalculator();
+    // "-123 / 3";
+    calculator.inputNumber(-123);
+    calculator.inputOperator("/");
+    calculator.inputNumber(3);
+
+    expect(calculator.evaluate()).toBe(-41);
+  });
 });

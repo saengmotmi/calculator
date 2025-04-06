@@ -104,6 +104,98 @@ describe("CalculatorPanel 컴포넌트", () => {
     const expressionDisplay = within(display).getByText("1");
     expect(expressionDisplay).toBeInTheDocument();
   });
+
+  it("음수에 대한 덧셈 연산이 올바르게 수행된다", () => {
+    render(<CalculatorPanel />);
+    const buttonMinus = screen.getByText("-");
+    const button1 = screen.getByText("1");
+    const button2 = screen.getByText("2");
+    const button3 = screen.getByText("3");
+    const buttonPlus = screen.getByText("+");
+    const button4 = screen.getByText("4");
+    const equalsButton = screen.getByText("=");
+
+    fireEvent.click(buttonMinus);
+    fireEvent.click(button1);
+    fireEvent.click(button2);
+    fireEvent.click(button3);
+    fireEvent.click(buttonPlus);
+    fireEvent.click(button4);
+    fireEvent.click(equalsButton);
+
+    const display = screen.getByRole("display");
+    const resultDisplay = within(display).getByText("-119"); // -123 + 4 = -119
+    expect(resultDisplay).toBeInTheDocument();
+  });
+
+  it("음수에 대한 뺄셈 연산이 올바르게 수행된다", () => {
+    render(<CalculatorPanel />);
+    const buttonMinus = screen.getByText("-");
+    const button1 = screen.getByText("1");
+    const button2 = screen.getByText("2");
+    const button3 = screen.getByText("3");
+    const buttonMinusAgain = screen.getByText("-");
+    const button4 = screen.getByText("4");
+    const equalsButton = screen.getByText("=");
+
+    fireEvent.click(buttonMinus);
+    fireEvent.click(button1);
+    fireEvent.click(button2);
+    fireEvent.click(button3);
+    fireEvent.click(buttonMinusAgain);
+    fireEvent.click(button4);
+    fireEvent.click(equalsButton);
+
+    const display = screen.getByRole("display");
+    const resultDisplay = within(display).getByText("-127"); // -123 - 4 = -127
+    expect(resultDisplay).toBeInTheDocument();
+  });
+
+  it("음수에 대한 곱셈 연산이 올바르게 수행된다", () => {
+    render(<CalculatorPanel />);
+    const buttonMinus = screen.getByText("-");
+    const button1 = screen.getByText("1");
+    const button2 = screen.getByText("2");
+    const button3 = screen.getByText("3");
+    const buttonMultiply = screen.getByText("*");
+    const button2Again = screen.getByText("2");
+    const equalsButton = screen.getByText("=");
+
+    fireEvent.click(buttonMinus);
+    fireEvent.click(button1);
+    fireEvent.click(button2);
+    fireEvent.click(button3);
+    fireEvent.click(buttonMultiply);
+    fireEvent.click(button2Again);
+    fireEvent.click(equalsButton);
+
+    const display = screen.getByRole("display");
+    const resultDisplay = within(display).getByText("-246"); // -123 * 2 = -246
+    expect(resultDisplay).toBeInTheDocument();
+  });
+
+  it("음수에 대한 나눗셈 연산이 올바르게 수행된다", () => {
+    render(<CalculatorPanel />);
+    const buttonMinus = screen.getByText("-");
+    const button1 = screen.getByText("1");
+    const button2 = screen.getByText("2");
+    const button3 = screen.getByText("3");
+    const buttonDivide = screen.getByText("/");
+    const button3Again = screen.getByText("3");
+    const equalsButton = screen.getByText("=");
+
+    fireEvent.click(buttonMinus);
+    fireEvent.click(button1);
+    fireEvent.click(button2);
+    fireEvent.click(button3);
+    fireEvent.click(buttonDivide);
+    fireEvent.click(button3Again);
+    fireEvent.click(equalsButton);
+
+    const display = screen.getByRole("display");
+    const resultDisplay = within(display).getByText("-41"); // -123 / 3 = -41
+    expect(resultDisplay).toBeInTheDocument();
+  });
 });
 
 describe("CalculatorPanel 컴포넌트 - 키보드 입력 테스트", () => {

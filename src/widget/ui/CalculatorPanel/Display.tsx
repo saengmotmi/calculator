@@ -6,21 +6,22 @@ interface DisplayProps {
 const Display = ({ expression, result }: DisplayProps) => {
   return (
     <div
-      role="display"
+      role="region"
+      aria-label="계산기 디스플레이"
       style={{
         marginBottom: "20px",
         padding: "10px",
         border: "1px solid #ddd",
       }}
     >
-      <div
-        data-testid="expression-display"
-        style={{ fontSize: "24px", marginBottom: "5px" }}
-      >
+      <div aria-label="수식" style={{ fontSize: "24px", marginBottom: "5px" }}>
         {expression}
       </div>
       <div
-        data-testid="result-display"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        aria-label="계산 결과"
         style={{ fontSize: "32px", color: "#000" }}
       >
         {result}

@@ -1,0 +1,68 @@
+name: Auto PR Description
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  update-pr-description:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.body == '' || github.event.pull_request.body == null
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed-files
+        run: |
+          echo "files=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | tr '\n' ' ')" >> $GITHUB_OUTPUT
+
+      - name: Generate PR description
+        id: generate-description
+        run: |
+          # 커밋 메시지들 가져오기
+          COMMITS=$(git log --oneline ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }})
+
+          # 변경된 파일들
+          CHANGED_FILES="${{ steps.changed-files.outputs.files }}"
+
+          # PR 디스크립션 생성
+          cat > pr_description.md << 'EOF'
+          ## 📋 변경사항 요약
+
+          ### 🔄 커밋 히스토리
+          ```
+          $COMMITS
+          ```
+
+          ### 📁 변경된 파일들
+          ```
+          $CHANGED_FILES
+          ```
+
+          ### ✅ 체크리스트
+          - [ ] 테스트 통과 확인
+          - [ ] 코드 리뷰 완료
+          - [ ] 문서 업데이트 확인
+          - [ ] 브레이킹 체인지 없음
+
+          ### 📝 추가 정보
+          이 PR에 대한 자세한 설명을 추가해주세요.
+          EOF
+
+      - name: Update PR description
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const description = fs.readFileSync('pr_description.md', 'utf8');
+
+            await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+              body: description
+            });

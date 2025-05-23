@@ -1,6 +1,5 @@
 import {
-  CalculatorErrorType,
-  CalculatorMode,
+  CalculatorStatus,
   CalculatorState,
   Token,
   initialCalculatorState,
@@ -21,62 +20,32 @@ import {
 /**
  * 알고리즘 오류를 도메인 오류로 변환
  */
-function mapAlgorithmErrorToDomainError(error: AlgorithmError): {
-  type: CalculatorErrorType;
-  details: string;
-} {
+function mapAlgorithmErrorToMessage(error: AlgorithmError): string {
   switch (error.type) {
     case ShuntingYardError.MISMATCHED_PARENTHESES:
-      return {
-        type: CalculatorErrorType.SYNTAX_ERROR,
-        details: "괄호가 맞지 않습니다",
-      };
+      return "괄호가 맞지 않습니다";
     case ShuntingYardError.INVALID_TOKEN:
-      return {
-        type: CalculatorErrorType.SYNTAX_ERROR,
-        details: "잘못된 수식 형식입니다",
-      };
+      return "잘못된 수식 형식입니다";
     default:
-      return {
-        type: CalculatorErrorType.UNKNOWN_ERROR,
-        details: error.details || "알 수 없는 오류가 발생했습니다",
-      };
+      return error.details || "알 수 없는 오류가 발생했습니다";
   }
 }
 
 /**
  * 계산 오류를 도메인 오류로 변환
  */
-function mapCalculationErrorToDomainError(error: CalculationErrorInfo): {
-  type: CalculatorErrorType;
-  details: string;
-} {
+function mapCalculationErrorToMessage(error: CalculationErrorInfo): string {
   switch (error.type) {
     case CalculationError.DIVISION_BY_ZERO:
-      return {
-        type: CalculatorErrorType.DIVISION_BY_ZERO,
-        details: "0으로 나눌 수 없습니다",
-      };
+      return "0으로 나눌 수 없습니다";
     case CalculationError.INCOMPLETE_EXPRESSION:
-      return {
-        type: CalculatorErrorType.INCOMPLETE_EXPRESSION,
-        details: "수식이 완전하지 않습니다",
-      };
+      return "수식이 완전하지 않습니다";
     case CalculationError.INVALID_OPERATOR:
-      return {
-        type: CalculatorErrorType.SYNTAX_ERROR,
-        details: "올바르지 않은 연산자입니다",
-      };
+      return "올바르지 않은 연산자입니다";
     case CalculationError.OVERFLOW:
-      return {
-        type: CalculatorErrorType.UNKNOWN_ERROR,
-        details: "계산 결과가 너무 큽니다",
-      };
+      return "계산 결과가 너무 큽니다";
     default:
-      return {
-        type: CalculatorErrorType.UNKNOWN_ERROR,
-        details: error.details || "계산 중 오류가 발생했습니다",
-      };
+      return error.details || "계산 중 오류가 발생했습니다";
   }
 }
 
@@ -116,7 +85,7 @@ export function applyDigitInput(
   digit: string
 ): CalculatorState {
   // 결과 상태에서는 새 계산 시작
-  if (state.mode === CalculatorMode.RESULT) {
+  if (state.status === CalculatorStatus.RESULT) {
     return {
       ...initialCalculatorState,
       currentInput: digit,
@@ -124,7 +93,7 @@ export function applyDigitInput(
   }
 
   // 에러 상태에서는 초기화 후 입력
-  if (state.mode === CalculatorMode.ERROR) {
+  if (state.status === CalculatorStatus.ERROR) {
     return {
       ...initialCalculatorState,
       currentInput: digit,
@@ -146,21 +115,18 @@ export function applyOperatorInput(
   operator: string
 ): CalculatorState {
   // 에러 상태에서는 연산자 무시
-  if (state.mode === CalculatorMode.ERROR) {
+  if (state.status === CalculatorStatus.ERROR) {
     return state;
   }
 
   // 결과 상태에서는 이전 결과를 첫 번째 토큰으로 사용
-  if (state.mode === CalculatorMode.RESULT && state.result !== null) {
+  if (state.status === CalculatorStatus.RESULT && state.result !== null) {
     return {
-      tokens: [
-        createNumberToken(state.result.toString()),
-        createOperatorToken(operator),
-      ],
+      tokens: [createNumberToken(state.result), createOperatorToken(operator)],
       currentInput: "",
       result: null,
-      mode: CalculatorMode.INPUT,
-      error: null,
+      status: CalculatorStatus.INPUT,
+      errorMessage: null,
     };
   }
 
@@ -192,7 +158,7 @@ export function applyOperatorInput(
     ...state,
     tokens: newTokens,
     currentInput: "",
-    mode: CalculatorMode.INPUT,
+    status: CalculatorStatus.INPUT,
   };
 }
 
@@ -204,12 +170,12 @@ export function applyParenthesisInput(
   parenthesis: string
 ): CalculatorState {
   // 에러 상태에서는 괄호 무시
-  if (state.mode === CalculatorMode.ERROR) {
+  if (state.status === CalculatorStatus.ERROR) {
     return state;
   }
 
   // 결과 상태에서 여는 괄호는 새 계산 시작, 닫는 괄호는 결과를 사용
-  if (state.mode === CalculatorMode.RESULT) {
+  if (state.status === CalculatorStatus.RESULT) {
     if (parenthesis === "(") {
       return {
         ...initialCalculatorState,
@@ -217,14 +183,11 @@ export function applyParenthesisInput(
       };
     } else if (state.result !== null) {
       return {
-        tokens: [
-          createNumberToken(state.result.toString()),
-          createRightParenToken(),
-        ],
+        tokens: [createNumberToken(state.result), createRightParenToken()],
         currentInput: "",
         result: null,
-        mode: CalculatorMode.INPUT,
-        error: null,
+        status: CalculatorStatus.INPUT,
+        errorMessage: null,
       };
     }
   }
@@ -253,7 +216,7 @@ export function applyParenthesisInput(
     ...state,
     tokens: newTokens,
     currentInput: "",
-    mode: CalculatorMode.INPUT,
+    status: CalculatorStatus.INPUT,
   };
 }
 
@@ -272,8 +235,8 @@ export function evaluateExpression(state: CalculatorState): CalculatorState {
     if (tokensToEvaluate.length === 0) {
       return {
         ...state,
-        result: 0,
-        mode: CalculatorMode.RESULT,
+        result: "0",
+        status: CalculatorStatus.RESULT,
       };
     }
 
@@ -288,10 +251,10 @@ export function evaluateExpression(state: CalculatorState): CalculatorState {
       postfixTokens = convertToPostfix(tokensToEvaluate);
     } catch (algorithmError) {
       // Shunting Yard 알고리즘 오류를 도메인 오류로 변환
-      const domainError = mapAlgorithmErrorToDomainError(
+      const errorMessage = mapAlgorithmErrorToMessage(
         algorithmError as AlgorithmError
       );
-      throw domainError;
+      throw errorMessage;
     }
 
     try {
@@ -300,26 +263,32 @@ export function evaluateExpression(state: CalculatorState): CalculatorState {
         ? calculateWithPrecision(postfixTokens)
         : calculateStandard(postfixTokens);
 
-      // 결과 반환
+      // 결과 반환 (문자열로 변환)
       return {
         tokens: [],
         currentInput: "",
-        result,
-        mode: CalculatorMode.RESULT,
-        error: null,
+        result: typeof result === "number" ? result.toString() : result,
+        status: CalculatorStatus.RESULT,
+        errorMessage: null,
       };
     } catch (calculationError) {
       // 계산 알고리즘 오류를 도메인 오류로 변환
-      const domainError = mapCalculationErrorToDomainError(
+      const errorMessage = mapCalculationErrorToMessage(
         calculationError as CalculationErrorInfo
       );
-      throw domainError;
+      throw errorMessage;
     }
-  } catch (err) {
+  } catch (errorMessage) {
+    // 모든 오류를 에러 상태로 변환
     return {
-      ...state,
-      mode: CalculatorMode.ERROR,
-      error: err as { type: CalculatorErrorType; details: string },
+      tokens: [],
+      currentInput: "",
+      result: null,
+      status: CalculatorStatus.ERROR,
+      errorMessage:
+        typeof errorMessage === "string"
+          ? errorMessage
+          : "계산 중 오류가 발생했습니다",
     };
   }
 }
@@ -330,19 +299,19 @@ export function evaluateExpression(state: CalculatorState): CalculatorState {
  */
 export function applyBackspace(state: CalculatorState): CalculatorState {
   // 에러 상태에서는 초기화
-  if (state.mode === CalculatorMode.ERROR) {
+  if (state.status === CalculatorStatus.ERROR) {
     return { ...initialCalculatorState };
   }
 
   // 결과 상태에서는 결과를 토큰으로 변환하고 입력 모드로 전환
-  if (state.mode === CalculatorMode.RESULT) {
+  if (state.status === CalculatorStatus.RESULT) {
     const result = state.result;
     return {
-      tokens: result !== null ? [createNumberToken(result.toString())] : [],
+      tokens: result !== null ? [createNumberToken(result)] : [],
       currentInput: "",
       result: null,
-      mode: CalculatorMode.INPUT,
-      error: null,
+      status: CalculatorStatus.INPUT,
+      errorMessage: null,
     };
   }
 
@@ -383,13 +352,14 @@ export function applyBackspace(state: CalculatorState): CalculatorState {
  */
 export function clearExpression(state: CalculatorState): CalculatorState {
   // 이전 결과 유지
-  const prevResult = state.mode === CalculatorMode.RESULT ? state.result : null;
+  const prevResult =
+    state.status === CalculatorStatus.RESULT ? state.result : null;
 
   return {
     tokens: [],
     currentInput: "",
     result: prevResult,
-    mode: CalculatorMode.INPUT,
-    error: null,
+    status: CalculatorStatus.INPUT,
+    errorMessage: null,
   };
 }

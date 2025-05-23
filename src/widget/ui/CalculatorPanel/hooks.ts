@@ -1,6 +1,18 @@
 import { useKey } from "react-use";
+import { useSyncExternalStore } from "react";
 
 import { calculatorStore } from "../../../features/calculator/calculatorStore";
+
+/**
+ * 계산기 표시 데이터를 위한 커스텀 훅
+ * Store에서 이미 변환된 UI 스냅샷을 반환
+ */
+export const useCalculatorDisplay = () => {
+  return useSyncExternalStore(
+    calculatorStore.subscribe,
+    calculatorStore.getSnapshot
+  );
+};
 
 export const useCalculatorKeyInput = () => {
   useKey("1", () => calculatorStore.input("1"));

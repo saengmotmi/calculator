@@ -1,22 +1,39 @@
-import * as Buttons from "./types";
-import React from "react";
+import {
+  ButtonConfig,
+  CalculatorActions,
+  createNumberButton,
+  createOperatorButton,
+  createEqualsButton,
+  createClearButton,
+  createBackspaceButton,
+} from "./types";
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps {
   label: string;
+  onClick: () => void;
+  "aria-label": string;
 }
 
-export const Button = ({ label, ...props }: ButtonProps) => {
+/**
+ * 개선된 Button 컴포넌트 (의존성 주입 기반)
+ */
+export const Button = ({
+  label,
+  onClick,
+  "aria-label": ariaLabel,
+}: ButtonProps) => {
   return (
     <button
-      {...props}
+      onClick={onClick}
+      aria-label={ariaLabel}
       style={{
-        padding: "15px",
+        padding: "20px",
         fontSize: "18px",
+        border: "1px solid #ccc",
+        borderRadius: "4px",
+        backgroundColor: "#f9f9f9",
         cursor: "pointer",
-        border: "1px solid #ddd",
-        backgroundColor: "#f5f5f5",
-        transition: "background-color 0.3s",
-        ...props.style,
+        minHeight: "60px",
       }}
     >
       {label}
@@ -24,34 +41,42 @@ export const Button = ({ label, ...props }: ButtonProps) => {
   );
 };
 
-export const buttonRows = [
-  [
-    new Buttons.NumberButton("7"),
-    new Buttons.NumberButton("8"),
-    new Buttons.NumberButton("9"),
-    new Buttons.OperatorButton("/"),
-  ],
-  [
-    new Buttons.NumberButton("4"),
-    new Buttons.NumberButton("5"),
-    new Buttons.NumberButton("6"),
-    new Buttons.OperatorButton("*"),
-  ],
-  [
-    new Buttons.NumberButton("1"),
-    new Buttons.NumberButton("2"),
-    new Buttons.NumberButton("3"),
-    new Buttons.OperatorButton("-"),
-  ],
-  [
-    new Buttons.NumberButton("0"),
-    new Buttons.OperatorButton("("),
-    new Buttons.OperatorButton(")"),
-    new Buttons.OperatorButton("+"),
-  ],
-  [
-    new Buttons.ClearButton(),
-    new Buttons.BackspaceButton(),
-    new Buttons.EqualsButton(),
-  ],
-];
+/**
+ * 함수형 버튼 레이아웃 생성
+ */
+export function createButtonLayout(
+  actions: CalculatorActions
+): ButtonConfig[][] {
+  return [
+    [
+      createClearButton(),
+      createBackspaceButton(),
+      createOperatorButton("("),
+      createOperatorButton(")"),
+    ],
+    [
+      createNumberButton("7"),
+      createNumberButton("8"),
+      createNumberButton("9"),
+      createOperatorButton("/"),
+    ],
+    [
+      createNumberButton("4"),
+      createNumberButton("5"),
+      createNumberButton("6"),
+      createOperatorButton("*"),
+    ],
+    [
+      createNumberButton("1"),
+      createNumberButton("2"),
+      createNumberButton("3"),
+      createOperatorButton("-"),
+    ],
+    [
+      createNumberButton("0"),
+      createOperatorButton("."),
+      createEqualsButton(),
+      createOperatorButton("+"),
+    ],
+  ];
+}
